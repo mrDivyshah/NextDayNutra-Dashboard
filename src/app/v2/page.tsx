@@ -207,15 +207,30 @@ function V2Dashboard() {
   // Load Jira lists
   useEffect(() => {
     setIsLoadingJira(true);
+    console.log('[Frontend] Fetching Jira customers and agents...');
     Promise.all([
       fetch("/api/jira/customers?type=customer").then(r => r.json()),
       fetch("/api/jira/customers?type=agent").then(r => r.json()),
     ])
       .then(([c, a]) => {
-        if (Array.isArray(c)) setActiveJiraCustomers(c);
-        if (Array.isArray(a)) setActiveJiraAgents(a);
+        console.log('[Frontend] Received customer data:', c);
+        console.log('[Frontend] Received agent data:', a);
+        if (Array.isArray(c)) {
+          console.log(`[Frontend] Setting ${c.length} active customers`);
+          setActiveJiraCustomers(c);
+        } else {
+          console.error('[Frontend] Customer data is not an array:', c);
+        }
+        if (Array.isArray(a)) {
+          console.log(`[Frontend] Setting ${a.length} active agents`);
+          setActiveJiraAgents(a);
+        } else {
+          console.error('[Frontend] Agent data is not an array:', a);
+        }
       })
-      .catch(() => {})
+      .catch((error) => {
+        console.error('[Frontend] Error fetching Jira data:', error);
+      })
       .finally(() => setIsLoadingJira(false));
   }, []);
 

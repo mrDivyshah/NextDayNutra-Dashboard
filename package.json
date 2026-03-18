@@ -14,9 +14,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:deploy": "npm run db:generate && npm run db:migrate",
     "db:push:unsafe": "drizzle-kit push",
-    "db:seed": "node scripts/drizzle-seed.mjs",
+    "db:seed": "tsx src/db/seed.ts",
     "db:setup": "npm run db:deploy && npm run db:seed",
-    "seed:admin": "node scripts/drizzle-seed.mjs"
+    "seed:admin": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
@@ -42,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

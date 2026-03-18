@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1773312872932,
-      "tag": "0000_jazzy_hulk",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1773659100842,
-      "tag": "0001_slim_union_jack",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1773734756982,
-      "tag": "0002_quick_starhawk",
+      "when": 1773800766341,
+      "tag": "0000_numerous_human_robot",
       "breakpoints": true
     }
   ]

@@ -85,14 +85,16 @@ export async function GET(request: NextRequest) {
   const authHeader = `Basic ${Buffer.from(`${CH_JIRA_EMAIL}:${CH_JIRA_TOKEN}`).toString('base64')}`;
 
   if (view === 'agent' || view === 'internal') {
-    let startAt = 0;
+    let cusNextPageToken: string | undefined = undefined;
     while (true) {
       const cusJql = `project = CUS AND issuetype = Customer AND status = Active`;
       try {
+        const cusPay: any = { jql: cusJql, maxResults: 100, fields: ['summary', 'customfield_11573'] };
+        if (cusNextPageToken) cusPay.nextPageToken = cusNextPageToken;
         const cusRes = await fetch(`${CH_JIRA_HOST}/rest/api/3/search/jql`, {
           method: 'POST',
           headers: { 'Authorization': authHeader, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ jql: cusJql, startAt, maxResults: 100, fields: ['summary', 'customfield_11573'] }),
+          body: JSON.stringify(cusPay),
           cache: 'no-store'
         });
         if (cusRes.ok) {
@@ -112,8 +114,8 @@ export async function GET(request: NextRequest) {
               customerToAgentMap[cName] = agent;
             }
           }
-          if (cusData.total > startAt + 100) {
-            startAt += 100;
+          if (cusData.nextPageToken) {
+            cusNextPageToken = cusData.nextPageToken;
           } else {
             break;
           }

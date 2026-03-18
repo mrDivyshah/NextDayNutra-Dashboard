@@ -29,10 +29,20 @@ export const users = mysqlTable(
   {
     id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
     name: varchar("name", { length: 191 }).notNull(),
-    email: varchar("email", { length: 191 }).notNull(),
+    email: varchar("email", { length: 191 }),
+    jiraId: varchar("jira_id", { length: 100 }),
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
     role: varchar("role", { length: 100 }).notNull().default("manager"),
     isActive: boolean("is_active").notNull().default(true),
+    phone: varchar("phone", { length: 50 }),
+    companyName: varchar("company_name", { length: 191 }),
+    addressLine1: varchar("address_line1", { length: 255 }),
+    addressLine2: varchar("address_line2", { length: 255 }),
+    city: varchar("city", { length: 100 }),
+    state: varchar("state", { length: 100 }),
+    zip: varchar("zip", { length: 20 }),
+    country: varchar("country", { length: 100 }),
+    accountManagerId: bigint("account_manager_id", { mode: "number", unsigned: true }),
     redirectUrl: varchar("redirect_url", { length: 500 }),
     additionalAccess: text("additional_access"),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
@@ -40,6 +50,7 @@ export const users = mysqlTable(
   },
   (table) => ({
     emailIdx: uniqueIndex("users_email_idx").on(table.email),
+    jiraIdx: uniqueIndex("users_jira_idx").on(table.jiraId),
   })
 );
 
