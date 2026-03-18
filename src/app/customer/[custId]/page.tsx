@@ -241,10 +241,20 @@ function CustomerDetailContent() {
                     const isExp = expandedRows.includes(order.id);
                     const { bg, color } = healthBadge(order.health);
                     const orderKey = (order.cmKey || order.so || "").toLowerCase();
+                    const hl = isHighlighted(orderKey);
                     const isCompleted = (order as any)._tab === "completed";
                     return (
                       <React.Fragment key={order.id}>
-                        <tr className="order-row" style={{ background: "#fff", cursor: "pointer" }} onClick={() => toggleRow(order.id, orderKey)}>
+                        <tr className="order-row" 
+                          style={{ 
+                            background: isExp ? "#f8fafc" : hl ? "#fffbf5" : "#fff", 
+                            cursor: "pointer",
+                            boxShadow: hl ? "0 0 0 2px #f97316, 0 4px 16px -4px rgba(249,115,22,0.18)" : "none",
+                            animation: hl ? "highlightPulse 2s ease-in-out" : "none",
+                            transition: "all 0.2s ease"
+                          }} 
+                          onClick={() => toggleRow(order.id, orderKey)}
+                        >
                           <td style={tdStyle(true, false)}><span style={{ background: bg, color, padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>{order.health}</span></td>
                           <td style={{ ...tdStyle(false, false), fontWeight: 700, color: "#0f172a" }}>{order.so || "—"}</td>
                           <td style={{ ...tdStyle(false, false), whiteSpace: "nowrap" }}>

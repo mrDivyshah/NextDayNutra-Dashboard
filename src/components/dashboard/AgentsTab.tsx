@@ -3,8 +3,8 @@
 import React from "react";
 import { AgentSidebar } from "./AgentSidebar";
 import { AgentFilters } from "./AgentFilters";
-import { AgentHierarchyView } from "./AgentHierarchyView";
 import { useDashboardData } from "@/hooks/useDashboardData";
+
 
 export function AgentsTab() {
   const {
@@ -123,7 +123,7 @@ export function AgentsTab() {
             <p style={{ color: '#fff' }}>Syncing Latest Data...</p>
           </div>
         ) : (
-          <AgentHierarchyView orders={filteredOrders} liveCustomers={liveCustomers} />
+          <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Agent Hierarchy</div>
         )}
       </main>
     </div>

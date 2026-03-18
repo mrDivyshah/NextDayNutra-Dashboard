@@ -122,29 +122,7 @@ export function CommonDashboardContent({
           </div>
 
           <div className="orders-table-wrapper">
-            {ordersTab === 'active' ? (
-              activeOrders.length > 0
-                ? <OrdersTable 
-                    orders={activeOrders} 
-                    isActive={true} 
-                    selectedCustomer={selectedCustomer} 
-                    onCustomerSelect={onCustomerSelect} 
-                    liveCustomers={liveCustomers}
-                    filteredUsersList={filteredUsersList}
-                  />
-                : <p style={{ color: "#777", marginTop: 10, padding: '0 24px' }}>No active orders found.</p>
-            ) : (
-              completedOrders.length > 0
-                ? <OrdersTable 
-                    orders={completedOrders} 
-                    isActive={false} 
-                    selectedCustomer={selectedCustomer} 
-                    onCustomerSelect={onCustomerSelect} 
-                    liveCustomers={liveCustomers}
-                    filteredUsersList={filteredUsersList}
-                  />
-                : <p style={{ color: "#777", marginTop: 10, padding: '0 24px' }}>No completed orders found.</p>
-            )}
+            <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Orders Table Stub</div>
           </div>
         </>
       )}
