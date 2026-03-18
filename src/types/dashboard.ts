@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Clock } from "lucide-react";
+// ─── Shared Dashboard Types ───────────────────────────────────────────────────
 
 export type LORRequest = {
   id: number;
@@ -9,6 +9,7 @@ export type LORRequest = {
   qtyDelivered: number;
   deliveryDate: string;
   labelSize: string;
+  summary?: string;
 };
 
 export type Order = {
@@ -16,7 +17,7 @@ export type Order = {
   highlight: boolean;
   health: string;
   healthColor: string;
-  icon: "clock" | "check" | "alert";
+  icon: string;
   so: string;
   cmKey: string;
   product: string;
@@ -55,10 +56,15 @@ export type CustomerUser = {
 export type Customer = {
   id: number;
   name: string;
+  jiraId?: string;
   users: CustomerUser[];
   agent?: string;
-  isAgent?: boolean; // Track if this is an agent record
+  isAgent?: boolean;
 };
+
+export type JiraCustomer = { name: string; agent: string; jiraId?: string };
+
+export type NavSection = "customers" | "agents" | "settings" | "internal";
 
 export type ViewMode = 'internal' | 'agent' | 'client';
 

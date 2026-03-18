@@ -34,8 +34,8 @@ const globalCache: Record<string, any> = {};
 export function useDashboardData(viewMode: ViewMode) {
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [liveCustomers, setLiveCustomers] = useState<Customer[]>([]);
-  const [activeJiraCustomers, setActiveJiraCustomers] = useState<string[]>([]);
-  const [activeJiraAgents, setActiveJiraAgents] = useState<string[]>([]);
+  const [activeJiraCustomers, setActiveJiraCustomers] = useState<{name: string, agent?: string, jiraId?: string}[]>([]);
+  const [activeJiraAgents, setActiveJiraAgents] = useState<{name: string, jiraId: string}[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingJiraData, setIsLoadingJiraData] = useState(false);
   
@@ -46,34 +46,8 @@ export function useDashboardData(viewMode: ViewMode) {
 
   // Fetch WordPress Users
   useEffect(() => {
-    const url = '/api/wordpress/users?roles=agent,customer,customer-agent';
-    
-    // Serve from cache immediately if available
-    if (globalCache[url]) {
-      setLiveCustomers(globalCache[url]);
-      setIsLoadingUsers(false);
-    } else {
-      setIsLoadingUsers(true);
-    }
-
-    fetch(url)
-      .then(res => res.ok ? res.json() : [])
-      .then(data => {
-        let mapped = MOCK_CUSTOMERS;
-        if (Array.isArray(data) && data.length > 0) {
-          mapped = data.map((u: any) => ({
-            id: u.id,
-            name: u.client_data?.post_meta?._ch_main_user_name || u.display_name || u.name,
-            agent: u.roles?.includes('agent') ? (u.display_name || u.name) : undefined,
-            users: [{ id: u.id, name: u.display_name || u.name, email: u.user_email || u.email, role: u.roles?.[0] || 'Customer' }],
-            isAgent: u.roles?.includes('agent')
-          }));
-        }
-        setLiveCustomers(mapped);
-        globalCache[url] = mapped; // Update cache silently
-      })
-      .catch(() => setLiveCustomers(MOCK_CUSTOMERS))
-      .finally(() => setIsLoadingUsers(false));
+    setIsLoadingUsers(false);
+    setLiveCustomers([]);
   }, []);
 
   // Fetch Jira Active Data
@@ -103,10 +77,10 @@ export function useDashboardData(viewMode: ViewMode) {
 
   const filteredUsersList = useMemo((): Customer[] => {
     if (viewMode === 'agent') {
-      return activeJiraAgents.map((name, index) => ({ id: -(index + 1001), name, users: [], isAgent: true }));
+      return activeJiraAgents.map((a, index) => ({ id: -(index + 1001), name: a.name, jiraId: a.jiraId, users: [], isAgent: true }));
     }
     if (viewMode === 'internal') return [];
-    return activeJiraCustomers.map((name, index) => ({ id: -(index + 1), name, users: [], isAgent: false }));
+    return activeJiraCustomers.map((c, index) => ({ id: -(index + 1), name: c.name, jiraId: c.jiraId, users: [], isAgent: false }));
   }, [activeJiraCustomers, activeJiraAgents, viewMode]);
 
   const selectedCustomer = useMemo(() => {

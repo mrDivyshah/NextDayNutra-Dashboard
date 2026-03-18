@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
   console.log(`[Jira API] Fetching ${type} data...`);
 
   // Determine JQL based on requested type
-  const activeJql = type === 'agent' ? 'project = AGENT AND status = Active' : 'project = CUS AND status = Active';
+  const activeJql = type === 'agent' 
+    ? 'project = AGENT AND issuetype = Agent AND status = Active' 
+    : 'project = CUS AND issuetype = Customer AND status = Active';
   console.log(`[Jira API] Using JQL: ${activeJql}`);
 
     const fields = ['summary', 'customfield_11573'];
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     try {
     while (true) {
-      console.log(`[Jira API] Fetching batch${nextPageToken ? ` (token: ${nextPageToken})` : ' (first page)'}...`);
+      console.log(`[Jira API] Fetching batch${nextPageToken ? ' with token' : ''}...`);
       const payload: any = { jql: activeJql, maxResults: 100, fields };
       if (nextPageToken) payload.nextPageToken = nextPageToken;
 
@@ -59,16 +61,28 @@ export async function GET(request: NextRequest) {
           else if (af && typeof af === 'object') agent = af.value || af.displayName || af.name || 'Unassigned';
         }
 
-        result.push(type === 'agent' ? name : { name, agent });
+        result.push(type === 'agent'
+          ? { name, jiraId: issue.key }
+          : { name, agent, jiraId: issue.key });
       }
 
-      if (data.nextPageToken) nextPageToken = data.nextPageToken;
-      else break;
+      if (data.nextPageToken) {
+        nextPageToken = data.nextPageToken;
+      } else {
+        break;
+      }
     }
 
     console.log(`[Jira API] Total ${type} results: ${result.length}`);
     if (type === 'agent') {
-      return NextResponse.json(Array.from(new Set(result)).sort());
+      // Deduplicate by name, keep first occurrence (includes jiraId)
+      const seen = new Set<string>();
+      const unique = result.filter((a: { name: string; jiraId: string }) => {
+        if (seen.has(a.name)) return false;
+        seen.add(a.name);
+        return true;
+      }).sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name));
+      return NextResponse.json(unique);
     }
 
     return NextResponse.json(result);
