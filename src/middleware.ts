@@ -10,6 +10,7 @@ const PUBLIC_PATHS = new Set([
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  console.log(`[Middleware] Path: ${pathname}`);
 
   if (
     PUBLIC_PATHS.has(pathname) ||
@@ -23,11 +24,24 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
+  console.log(`[Middleware] Token present: ${!!token}`);
 
   if (token) {
     if (pathname.startsWith("/super-admin") && token.role !== "super_admin") {
       return NextResponse.redirect(new URL("/", request.url));
     }
+
+    // Role-based redirection from the root path
+    if (pathname === "/") {
+      const jiraId = (token as any).jiraId;
+      if (token.role === "agent" && jiraId) {
+        return NextResponse.redirect(new URL(`/agent/${jiraId}`, request.url));
+      }
+      if (token.role === "customer" && jiraId) {
+        return NextResponse.redirect(new URL(`/customer/${jiraId}`, request.url));
+      }
+    }
+
     return NextResponse.next();
   }
 

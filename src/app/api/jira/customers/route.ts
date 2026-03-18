@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireApiSession } from '@/lib/api-auth';
 
+export const dynamic = 'force-dynamic';
+
 const CH_JIRA_EMAIL = process.env.JIRA_EMAIL;
 const CH_JIRA_TOKEN = process.env.JIRA_TOKEN;
 const CH_JIRA_HOST = process.env.JIRA_HOST;
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     : 'project = CUS AND issuetype = Customer AND status = Active';
   console.log(`[Jira API] Using JQL: ${activeJql}`);
 
-    const fields = ['summary', 'customfield_11573'];
+    const jfields = ['summary', 'customfield_11573'];
     const authHeader = `Basic ${Buffer.from(`${CH_JIRA_EMAIL}:${CH_JIRA_TOKEN}`).toString('base64')}`;
     const result: any[] = [];
     let nextPageToken: string | undefined = undefined;
@@ -32,9 +34,9 @@ export async function GET(request: NextRequest) {
     try {
     while (true) {
       console.log(`[Jira API] Fetching batch${nextPageToken ? ' with token' : ''}...`);
-      const payload: any = { jql: activeJql, maxResults: 100, fields };
+      const payload: any = { jql: activeJql, maxResults: 100, fields: jfields };
       if (nextPageToken) payload.nextPageToken = nextPageToken;
-
+      console.log('jita payload' + JSON.stringify(payload));
       const response = await fetch(`${CH_JIRA_HOST}/rest/api/3/search/jql`, {
         method: 'POST',
         headers: { 'Authorization': authHeader, 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -61,9 +63,12 @@ export async function GET(request: NextRequest) {
           else if (af && typeof af === 'object') agent = af.value || af.displayName || af.name || 'Unassigned';
         }
 
-        result.push(type === 'agent'
-          ? { name, jiraId: issue.key }
-          : { name, agent, jiraId: issue.key });
+        const item = { 
+          name, 
+          jiraId: issue.key || '',
+          agent: agent || 'Unassigned'
+        };
+        result.push(item);
       }
 
       if (data.nextPageToken) {
@@ -73,19 +78,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`[Jira API] Total ${type} results: ${result.length}`);
+    const finalArray = Array.isArray(result) ? result : [];
+    console.log(`[Jira API] Final ${type} result length: ${finalArray.length}`);
+    
     if (type === 'agent') {
-      // Deduplicate by name, keep first occurrence (includes jiraId)
       const seen = new Set<string>();
-      const unique = result.filter((a: { name: string; jiraId: string }) => {
-        if (seen.has(a.name)) return false;
+      const unique = finalArray.filter((a: any) => {
+        if (!a.name || seen.has(a.name)) return false;
         seen.add(a.name);
         return true;
-      }).sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name));
+      }).sort((a: any, b: any) => a.name.localeCompare(b.name));
+      console.log(`[Jira API] Unique agents: ${unique.length}`);
       return NextResponse.json(unique);
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json(finalArray);
   } catch (error: any) {
     console.error("[Jira API] Customer Fetch Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

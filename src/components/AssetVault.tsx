@@ -569,16 +569,32 @@ function DiscussionModal({ orderId, initialAssetId, onClose, addToast, isAdmin =
       return <iframe src={gView} title="doc" style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />;
     }
     if (name.endsWith(".psd") || name.endsWith(".ai")) {
-      const photopeaUrl = `https://www.photopea.com/#${encodeURIComponent(url)}`;
+      const fullUrl = url.startsWith("http") ? url : `${window.location.origin}${url}`;
+      const photopeaUrl = `https://www.photopea.com/#${encodeURIComponent(JSON.stringify({ files: [fullUrl] }))}`;
       const icon = name.endsWith(".ai") ? "🎨" : "🖼️";
       return (
-        <div style={{ textAlign: "center", color: "#fff" }}>
-          <div style={{ fontSize: 64 }}>{icon}</div>
-          <h3 style={{ margin: "12px 0 8px" }}>{activeAsset.file_name}</h3>
-          <p style={{ color: "rgba(255,255,255,0.5)", marginBottom: 16 }}>Professional design file</p>
+        <div style={{ textAlign: "center", color: "#334155" }}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>{icon}</div>
+          <h3 style={{ color: "#0f172a", margin: "0 0 8px", fontSize: 20, fontWeight: 800 }}>{activeAsset.file_name}</h3>
+          <p style={{ color: "#64748b", margin: "0 0 24px", fontSize: 14 }}>Professional design file ready for editing.</p>
           <a href={photopeaUrl} target="_blank" rel="noopener noreferrer"
-            style={{ background: "#2eb67d", color: "#fff", padding: "12px 24px", borderRadius: 8, textDecoration: "none", fontWeight: 700 }}>
-            Open Online Editor
+            style={{ 
+              background: "#2eb67d", 
+              color: "#fff", 
+              padding: "14px 28px", 
+              borderRadius: 10, 
+              textDecoration: "none", 
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 12px rgba(46,182,125,0.3)",
+              transition: "transform 0.2s"
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >
+            Open in Photopea Editor
           </a>
         </div>
       );

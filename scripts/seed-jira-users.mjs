@@ -68,7 +68,7 @@ async function fetchJiraIssues(jql, fields) {
       fields,
     };
     if (nextPageToken) payload.nextPageToken = nextPageToken;
-
+    console.log(payload);
     const response = await fetch(`${jiraHost}/rest/api/3/search/jql`, {
       method: "POST",
       headers: {

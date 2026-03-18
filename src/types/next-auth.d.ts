@@ -6,12 +6,14 @@ declare module "next-auth" {
     user: DefaultSession["user"] & {
       id: number;
       role: AppRole;
+      jiraId?: string | null;
       rememberMe?: boolean;
     };
   }
 
   interface User {
     role: AppRole;
+    jiraId?: string | null;
     rememberMe?: boolean;
   }
 }
@@ -20,6 +22,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: number;
     role?: AppRole;
+    jiraId?: string | null;
     rememberMe?: boolean;
   }
 }

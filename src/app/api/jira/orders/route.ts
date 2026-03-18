@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireApiSession } from '@/lib/api-auth';
 
+export const dynamic = 'force-dynamic';
+
 const CH_JIRA_EMAIL = process.env.JIRA_EMAIL;
 const CH_JIRA_TOKEN = process.env.JIRA_TOKEN;
 const CH_JIRA_HOST = process.env.JIRA_HOST;

@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { roles, users } from "@/db/schema";
 import type { AppRole } from "@/lib/roles";
 
+
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -70,8 +71,9 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: roleRecord.key,
+          jiraId: user.jiraId,
           rememberMe,
-        } as NextAuthUser & { role: AppUser["role"] };
+        } as NextAuthUser & { role: AppUser["role"]; jiraId?: string | null };
       },
     }),
   ],
@@ -79,17 +81,19 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = Number(user.id);
-        token.role = (user as NextAuthUser & { role: AppUser["role"] }).role;
-        token.rememberMe = Boolean((user as NextAuthUser & { rememberMe?: boolean }).rememberMe);
-        token.exp = Math.floor(Date.now() / 1000) + (token.rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 12);
+        token.role = user.role;
+        token.jiraId = user.jiraId;
+        token.rememberMe = !!user.rememberMe;
+        token.exp = Math.floor(Date.now() / 1000) + (user.rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 12);
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = Number(token.id);
-        session.user.role = token.role as AppUser["role"];
-        session.user.rememberMe = Boolean(token.rememberMe);
+        session.user.role = token.role as AppRole;
+        session.user.jiraId = token.jiraId;
+        session.user.rememberMe = !!token.rememberMe;
       }
       return session;
     },

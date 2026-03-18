@@ -6,8 +6,9 @@ import {
   ArrowUpDown, ArrowDown, Briefcase, ChevronDown, ChevronUp,
   ClipboardList, ExternalLink, LayoutDashboard, MessageSquare,
   RefreshCw, Upload, Check, X, CheckCircle2, AlertCircle,
-  AlertTriangle, Tag, Clock, Search, Filter,
+  AlertTriangle, Tag, Clock, Search, Filter, LogOut
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import type { Order, LORRequest } from "@/types/dashboard";
 import AssetVault from "@/components/AssetVault";
 import { OrderFilesPreview } from "@/components/dashboard/OrderFiles";
@@ -124,8 +125,20 @@ function AgentDetailContent() {
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Agent Profile</div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#fff" }}>{agentName || "Loading…"}</h1>
         </div>
-        <div style={{ marginLeft: "auto", background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 14px", color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 600 }}>
-          Jira ID: {agentId}
+        <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+          <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 14px", color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 600 }}>
+            Jira ID: {agentId}
+          </div>
+          <a href={`https://nextdaynutra.atlassian.net/browse/${agentId}`} target="_blank" rel="noopener noreferrer"
+            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+            View in Jira <ExternalLink size={12} />
+          </a>
+          <button 
+            onClick={() => signOut()}
+            style={{ background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, padding: "6px 14px", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <LogOut size={14} /> Sign Out
+          </button>
         </div>
       </div>
 

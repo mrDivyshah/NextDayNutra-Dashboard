@@ -3,31 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Customer, Order, ViewMode, AgentSummary } from "@/types/dashboard";
 
-const MOCK_CUSTOMERS: Customer[] = [
-  {
-    id: 1,
-    name: "Bigly",
-    agent: "Rachel",
-    users: [
-      { id: 101, name: "Bigly User", email: "user@bigly.com", role: "Customer" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Wellnex Solutions",
-    agent: "Rachel",
-    users: [
-      { id: 201, name: "Caitlin Macnabb", email: "caitlin@wellnex.com", role: "Customer" },
-    ],
-  },
-  {
-    id: 3,
-    name: "Test Customer 2 by divy",
-    agent: "Shubham",
-    users: [{ id: 301, name: "Divy", email: "divy@test.com", role: "Customer" }],
-  },
-];
-
 // Global in-memory cache to enable Stale-While-Revalidate (instant tab switching)
 const globalCache: Record<string, any> = {};
 

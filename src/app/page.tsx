@@ -60,7 +60,7 @@ type Order = {
 };
 type CustomerUser = { id: number; name: string; email: string; role: string };
 type Customer = { id: number; name: string; users: CustomerUser[]; agent?: string; isAgent?: boolean };
-type NavSection = "customers" | "agents" | "settings" | "internal";
+type NavSection = "customers" | "agents" | "settings" | "internal" | "multi-location" | "executive";
 
 
 // ─── Root export ──────────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ function tdStyle(first: boolean, last: boolean): React.CSSProperties {
 // ─── Main Dashboard ──────────────────────────────────────────────────────────
 function V2Dashboard() {
   const [section, setSection] = useState<NavSection>("customers");
-  const [expanded, setExpanded] = useState<string[]>(["customers-group"]);
+  const [expanded, setExpanded] = useState<string[]>(["dashboards-group"]);
   const [notifOpen, setNotifOpen] = useState(false);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
@@ -178,28 +178,39 @@ function V2Dashboard() {
   useEffect(() => {
     setIsLoadingJira(true);
     console.log('[Frontend] Fetching Jira customers and agents...');
+    const cacheBuster = `&t=${Date.now()}`;
     Promise.all([
-      fetch("/api/jira/customers?type=customer").then(r => r.json()),
-      fetch("/api/jira/customers?type=agent").then(r => r.json()),
+      fetch(`/api/jira/customers?type=customer${cacheBuster}`).then(r => r.json()),
+      fetch(`/api/jira/customers?type=agent${cacheBuster}`).then(r => r.json()),
     ])
-      .then(([c, a]) => {
-        console.log('[Frontend] Received customer data:', c);
-        console.log('[Frontend] Received agent data:', a);
-        if (Array.isArray(c)) {
-          console.log(`[Frontend] Setting ${c.length} active customers`);
-          setActiveJiraCustomers(c);
+      .then(([customers, agents]) => {
+        console.log('[Frontend] Received customer data:', customers);
+        console.log('[Frontend] Received agent data:', agents);
+        
+        // Robustly handle non-array responses (e.g. error objects)
+        const custs = Array.isArray(customers) ? customers : [];
+        const agts = Array.isArray(agents) ? agents : [];
+        
+        if (custs.length > 0 || Array.isArray(customers)) {
+           console.log(`[Frontend] Setting ${custs.length} active customers`);
+           setActiveJiraCustomers(custs);
         } else {
-          console.error('[Frontend] Customer data is not an array:', c);
+           console.error('[Frontend] Customer data is not an array (defaulting to empty):', customers);
+           setActiveJiraCustomers([]);
         }
-        if (Array.isArray(a)) {
-          console.log(`[Frontend] Setting ${a.length} active agents`);
-          setActiveJiraAgents(a);
+
+        if (agts.length > 0 || Array.isArray(agents)) {
+           console.log(`[Frontend] Setting ${agts.length} active agents`);
+           setActiveJiraAgents(agts);
         } else {
-          console.error('[Frontend] Agent data is not an array:', a);
+           console.error('[Frontend] Agent data is not an array (defaulting to empty):', agents);
+           setActiveJiraAgents([]);
         }
       })
       .catch((error) => {
         console.error('[Frontend] Error fetching Jira data:', error);
+        setActiveJiraCustomers([]);
+        setActiveJiraAgents([]);
       })
       .finally(() => setIsLoadingJira(false));
   }, []);
@@ -222,6 +233,9 @@ function V2Dashboard() {
     if (viewMode === "client" && selectedCustomer) url += `&customerName=${encodeURIComponent(selectedCustomer.name.trim())}`;
     else if (viewMode === "agent" && selectedCustomer) url += `&agentName=${encodeURIComponent(selectedCustomer.name.trim())}`;
     else if (viewMode === "client" || viewMode === "agent") url = `/api/jira/orders?view=internal`;
+    
+    url += (url.includes('?') ? '&' : '?') + `t=${Date.now()}`;
+    
     fetch(url)
       .then(r => r.json())
       .then(d => { setActiveOrders(d.activeOrders || []); setCompletedOrders(d.completedOrders || []); })
@@ -262,10 +276,12 @@ function V2Dashboard() {
   // ── Sidebar nav data ─────────────────────────────────────────────────────────
   const navGroups = [
     {
-      key: "customers-group", label: "People", icon: Users,
+      key: "dashboards-group", label: "Dashboards", icon: LayoutDashboard,
       items: [
         { key: "customers" as NavSection, label: "Customer Dashboard", icon: Users, badge: activeJiraCustomers.length },
         { key: "agents" as NavSection, label: "Agent Dashboard", icon: Briefcase, badge: activeJiraAgents.length },
+        { key: "multi-location" as NavSection, label: "Multi location", icon: Globe },
+        { key: "executive" as NavSection, label: "Executive", icon: Sparkles },
       ],
     },
     {
@@ -612,6 +628,26 @@ function V2Dashboard() {
         />;
       case "settings":
         return <SettingsSection />;
+      case "multi-location":
+        return (
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", height: "calc(100vh - 120px)", overflow: "hidden" }}>
+             <iframe 
+               src="https://hotworks.nextdaynutra.com" 
+               style={{ width: "100%", height: "100%", border: "none" }}
+               title="Multi-location Dashboard"
+             />
+          </div>
+        );
+      case "executive":
+        return (
+          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", height: "calc(100vh - 120px)", overflow: "hidden" }}>
+             <iframe 
+               src="https://exe.nextdaynutra.com" 
+               style={{ width: "100%", height: "100%", border: "none" }}
+               title="Executive Dashboard"
+             />
+          </div>
+        );
       default:
         return null;
     }
@@ -1639,9 +1675,17 @@ function SettingsSection() {
 // ─── Loading spinner ──────────────────────────────────────────────────────────
 function LoadingSpinner() {
   return (
-    <div style={{ padding: "48px 0", textAlign: "center", color: "#94a3b8" }}>
-      <RefreshCw size={28} style={{ marginBottom: 10, opacity: 0.3, animation: "spin 1s linear infinite" }} />
-      <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>Loading data…</p>
+    <div style={{ 
+      padding: "60px 0", 
+      display: "flex", 
+      flexDirection: "column", 
+      alignItems: "center", 
+      justifyContent: "center", 
+      color: "#94a3b8",
+      gap: 12
+    }}>
+      <RefreshCw size={32} style={{ opacity: 0.4, animation: "spin 2s linear infinite" }} />
+      <p style={{ fontSize: 13, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8" }}>Loading data…</p>
     </div>
   );
 }

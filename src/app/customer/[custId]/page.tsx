@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowDown, Briefcase, ClipboardList, ExternalLink,
   LayoutDashboard, MessageSquare, RefreshCw, Search,
-  CheckCircle2, Clock,
+  CheckCircle2, Clock, LogOut
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import type { Order } from "@/types/dashboard";
 import AssetVault from "@/components/AssetVault";
 import { OrderFilesPreview } from "@/components/dashboard/OrderFiles";
@@ -142,6 +143,12 @@ function CustomerDetailContent() {
             style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
             View in Jira
           </a>
+          <button 
+            onClick={() => signOut()}
+            style={{ background: "rgba(239,68,68,0.2)", border: "1px solid rgba(239,68,68,0.4)", borderRadius: 8, padding: "6px 14px", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <LogOut size={14} /> Sign Out
+          </button>
         </div>
       </div>
 
