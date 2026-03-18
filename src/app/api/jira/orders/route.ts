@@ -11,9 +11,16 @@ if (!CH_JIRA_EMAIL || !CH_JIRA_TOKEN || !CH_JIRA_HOST) {
   throw new Error('Jira credentials not configured');
 }
 
+import crypto from 'crypto';
+
 // In-memory cache representing static key datasets
-const jiraApiCache = new Map<string, { data: any; timestamp: number }>();
+const jiraApiCache = new Map<string, { data: any; timestamp: number; etag: string }>();
 const CACHE_TTL = 1000 * 60 * 3; // 3 Minutes caching buffer limit
+
+// Rate limiting setup
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 40;
+const rateLimits = new Map<string, { count: number; resetTime: number }>();
 
 
 function extractAdfText(node: any, output: string[] = []) {
@@ -32,22 +39,40 @@ function extractAdfText(node: any, output: string[] = []) {
 }
 
 export async function GET(request: NextRequest) {
-  const { response } = await requireApiSession();
+  const { session, response } = await requireApiSession();
   if (response) return response;
+
+  const userId = session?.user?.id?.toString() || request.headers.get("x-forwarded-for") || "unknown";
+  const now = Date.now();
+  let rateRecord = rateLimits.get(userId);
+
+  if (!rateRecord || now > rateRecord.resetTime) {
+    rateRecord = { count: 1, resetTime: now + RATE_LIMIT_WINDOW };
+  } else {
+    rateRecord.count++;
+  }
+  rateLimits.set(userId, rateRecord);
+
+  if (rateRecord.count > MAX_REQUESTS) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
 
   const { searchParams } = new URL(request.url);
   const view = searchParams.get('view') || 'client';
   const customerName = searchParams.get('customerName');
   const agentName = searchParams.get('agentName');
 
-  // Build Cache Key from relevant parameters
   const cacheKey = `${view}_${customerName || 'all'}_${agentName || 'all'}`;
-  const now = Date.now();
+  const clientETag = request.headers.get('if-none-match');
   const cached = jiraApiCache.get(cacheKey);
 
   if (cached && (now - cached.timestamp < CACHE_TTL)) {
+    if (clientETag === cached.etag) {
+      console.log(`[Cache Hit - 304 Not Modified] for key: ${cacheKey}`);
+      return new NextResponse(null, { status: 304, headers: { "ETag": cached.etag } });
+    }
     console.log(`[Cache Hit] Serving from memory for key: ${cacheKey}`);
-    return NextResponse.json(cached.data);
+    return NextResponse.json(cached.data, { headers: { "ETag": cached.etag } });
   }
 
   console.log(`[Cache Miss] Fetching fresh Jira inputs for key: ${cacheKey}`);
@@ -405,9 +430,18 @@ export async function GET(request: NextRequest) {
     }
 
     const resultData = { activeOrders, completedOrders };
-    jiraApiCache.set(cacheKey, { data: resultData, timestamp: Date.now() });
+    
+    // Generate ETag for smart response
+    const dataString = JSON.stringify(resultData);
+    const etag = crypto.createHash('md5').update(dataString).digest('hex');
+    
+    jiraApiCache.set(cacheKey, { data: resultData, timestamp: Date.now(), etag });
 
-    return NextResponse.json(resultData);
+    if (clientETag === etag) {
+      return new NextResponse(null, { status: 304, headers: { "ETag": etag } });
+    }
+
+    return NextResponse.json(resultData, { headers: { "ETag": etag } });
 
   } catch (error: any) {
     console.error("Jira API Error: ", error);

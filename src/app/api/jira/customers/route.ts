@@ -11,12 +11,49 @@ if (!CH_JIRA_EMAIL || !CH_JIRA_TOKEN || !CH_JIRA_HOST) {
   throw new Error('Jira credentials not configured');
 }
 
+import crypto from 'crypto';
+
+// In-memory cache
+const jiraApiCache = new Map<string, { data: any; timestamp: number; etag: string }>();
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours caching buffer limit for customers/agents
+
+// Rate limiting setup
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 40;
+const rateLimits = new Map<string, { count: number; resetTime: number }>();
+
 export async function GET(request: NextRequest) {
-  const { response } = await requireApiSession();
+  const { session, response } = await requireApiSession();
   if (response) return response;
+
+  const userId = session?.user?.id?.toString() || request.headers.get("x-forwarded-for") || "unknown";
+  const now = Date.now();
+  let rateRecord = rateLimits.get(userId);
+
+  if (!rateRecord || now > rateRecord.resetTime) {
+    rateRecord = { count: 1, resetTime: now + RATE_LIMIT_WINDOW };
+  } else {
+    rateRecord.count++;
+  }
+  rateLimits.set(userId, rateRecord);
+
+  if (rateRecord.count > MAX_REQUESTS) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type') || 'customer';
+
+  const cacheKey = `customers_${type}`;
+  const clientETag = request.headers.get('if-none-match');
+  const cached = jiraApiCache.get(cacheKey);
+
+  if (cached && (now - cached.timestamp < CACHE_TTL)) {
+    if (clientETag === cached.etag) {
+      return new NextResponse(null, { status: 304, headers: { "ETag": cached.etag } });
+    }
+    return NextResponse.json(cached.data, { headers: { "ETag": cached.etag } });
+  }
 
   console.log(`[Jira API] Fetching ${type} data...`);
 
@@ -81,18 +118,29 @@ export async function GET(request: NextRequest) {
     const finalArray = Array.isArray(result) ? result : [];
     console.log(`[Jira API] Final ${type} result length: ${finalArray.length}`);
     
+    let finalData: any;
     if (type === 'agent') {
       const seen = new Set<string>();
-      const unique = finalArray.filter((a: any) => {
+      finalData = finalArray.filter((a: any) => {
         if (!a.name || seen.has(a.name)) return false;
         seen.add(a.name);
         return true;
       }).sort((a: any, b: any) => a.name.localeCompare(b.name));
-      console.log(`[Jira API] Unique agents: ${unique.length}`);
-      return NextResponse.json(unique);
+      console.log(`[Jira API] Unique agents: ${finalData.length}`);
+    } else {
+      finalData = finalArray;
     }
 
-    return NextResponse.json(finalArray);
+    const dataString = JSON.stringify(finalData);
+    const etag = crypto.createHash('md5').update(dataString).digest('hex');
+    
+    jiraApiCache.set(cacheKey, { data: finalData, timestamp: Date.now(), etag });
+
+    if (clientETag === etag) {
+      return new NextResponse(null, { status: 304, headers: { "ETag": etag } });
+    }
+
+    return NextResponse.json(finalData, { headers: { "ETag": etag } });
   } catch (error: any) {
     console.error("[Jira API] Customer Fetch Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

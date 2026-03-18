@@ -96,12 +96,73 @@ export function DateRangePicker({
       );
     }
 
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    
+    const years = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear - 5; i <= currentYear + 2; i++) years.push(i);
+
     return (
       <div style={{ flex: 1, minWidth: 220 }}>
         <div
-          style={{ fontSize: 14, fontWeight: 700, color: "#123e67", marginBottom: 12, textAlign: "center" }}
+          style={{ 
+            display: "flex", 
+            gap: 6, 
+            justifyContent: "center", 
+            marginBottom: 16,
+            background: "#f8fafc",
+            padding: "4px",
+            borderRadius: 8
+          }}
         >
-          {monthName} {year}
+          <select 
+            value={d.getMonth()}
+            onChange={(e) => {
+              const newMonth = parseInt(e.target.value);
+              const targetDate = new Date(d.getFullYear(), newMonth, 1);
+              // Adjust viewDate so this specific calendar (offset) shows the selected month
+              setViewDate(new Date(targetDate.getFullYear(), targetDate.getMonth() - offset, 1));
+            }}
+            style={{
+              border: "none",
+              background: "transparent",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#123e67",
+              cursor: "pointer",
+              outline: "none",
+              padding: "2px 4px"
+            }}
+          >
+            {months.map((m, i) => (
+              <option key={m} value={i}>{m}</option>
+            ))}
+          </select>
+          <select 
+            value={d.getFullYear()}
+            onChange={(e) => {
+              const newYear = parseInt(e.target.value);
+              const targetDate = new Date(newYear, d.getMonth(), 1);
+              setViewDate(new Date(targetDate.getFullYear(), targetDate.getMonth() - offset, 1));
+            }}
+            style={{
+              border: "none",
+              background: "transparent",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#123e67",
+              cursor: "pointer",
+              outline: "none",
+              padding: "2px 4px"
+            }}
+          >
+            {years.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
           {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((w) => (
@@ -126,71 +187,65 @@ export function DateRangePicker({
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "#94a3b8",
-              textTransform: "uppercase",
-              marginLeft: 4,
-            }}
-          >
-            Start Date
-          </label>
-          <div
-            onClick={() => setIsOpen(true)}
-            style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 8,
-              height: 34,
-              width: 130,
-              padding: "0 10px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              cursor: "pointer",
-              fontSize: 12,
-              color: "#334155",
-            }}
-          >
-            {startDate || "dd-mm-yyyy"}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <label
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "#94a3b8",
+            textTransform: "uppercase",
+            marginLeft: 4,
+          }}
+        >
+          Date Range
+        </label>
+        <div
+          onClick={() => setIsOpen(true)}
+          style={{
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            borderRadius: 8,
+            height: 34,
+            width: 280,
+            padding: "0 12px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            cursor: "pointer",
+            fontSize: 12,
+            color: "#334155",
+            transition: "border-color 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#cbd5e1")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#e2e8f0")}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
             <Calendar size={14} color="#94a3b8" />
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "#94a3b8",
-              textTransform: "uppercase",
-              marginLeft: 4,
-            }}
-          >
-            End Date
-          </label>
-          <div
-            onClick={() => setIsOpen(true)}
-            style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 8,
-              height: 34,
-              width: 130,
-              padding: "0 10px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              cursor: "pointer",
-              fontSize: 12,
-              color: "#334155",
-            }}
-          >
-            {endDate || "dd-mm-yyyy"}
-            <Calendar size={14} color="#94a3b8" />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+              <span style={{ color: startDate ? "#334155" : "#94a3b8" }}>{startDate || "dd-mm-yyyy"}</span>
+              <span style={{ color: "#cbd5e1", fontWeight: 700 }}>→</span>
+              <span style={{ color: endDate ? "#334155" : "#94a3b8" }}>{endDate || "dd-mm-yyyy"}</span>
+            </div>
+            {(startDate || endDate) && (
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                style={{
+                  fontSize: 10,
+                  color: "#f05323",
+                  fontWeight: 800,
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  background: "#fff1f1",
+                  marginLeft: 4
+                }}
+              >
+                CLEAR
+              </div>
+            )}
           </div>
         </div>
       </div>

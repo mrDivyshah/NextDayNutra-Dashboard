@@ -128,68 +128,152 @@ export function AgentHierarchyView({
     startDate ||
     endDate;
 
+  const totals = useMemo(() => {
+    let paid = 0;
+    let pending = 0;
+    let balance = 0;
+    Object.values(grouped).forEach(customers => {
+      Object.values(customers).forEach(orders => {
+        orders.forEach(o => {
+          paid += (o.commissionPaid || 0);
+          pending += (o.commissionDue || 0);
+          balance += (o.commissionBalanceOwed || 0);
+        });
+      });
+    });
+    return { paid, pending, balance };
+  }, [grouped]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%", overflow: "hidden" }}>
-      {/* Filter Bar */}
-      <div
-        style={{
-          background: "#fff",
-          padding: "12px 20px",
-          borderRadius: 12,
-          border: "1px solid #e2e8f0",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          flexWrap: "wrap",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginLeft: 4 }}>
-            Agent
-          </label>
-          <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} style={{ ...SEL_STYLE, width: 180 }}>
-            <option value="All Agents">All Agents</option>
-            {allAgents
-              .filter((a) => a.name !== "Unassigned")
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((a) => (
-                <option key={a.jiraId} value={a.name}>{a.name}</option>
-              ))}
-          </select>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginLeft: 4 }}>
-            Customer
-          </label>
-          <div style={{ position: "relative" }}>
-            <Search size={12} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
-            <input value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder="Search customer…" style={{ ...SEL_STYLE, paddingLeft: 30, width: 200 }} />
+      {/* Filter Bar & Summary Widget */}
+      <div style={{ display: "flex", gap: 16, alignItems: "stretch", flexWrap: "wrap" }}>
+        <div
+          style={{
+            background: "#fff",
+            padding: "16px 20px",
+            borderRadius: 12,
+            border: "1px solid #e2e8f0",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+            flex: 1,
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginLeft: 4 }}>
+              Agent
+            </label>
+            <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} style={{ ...SEL_STYLE, width: 180 }}>
+              <option value="All Agents">All Agents</option>
+              {allAgents
+                .filter((a) => a.name !== "Unassigned")
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((a) => (
+                  <option key={a.jiraId} value={a.name}>{a.name}</option>
+                ))}
+            </select>
           </div>
-        </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <label style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginLeft: 4 }}>
-            Payment Status
-          </label>
-          <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} style={{ ...SEL_STYLE, width: 140 }}>
-            <option value="All Payments">All Payments</option>
-            <option value="Paid">Paid Only</option>
-            <option value="Pending">Pending / Deposit</option>
-          </select>
-        </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginLeft: 4 }}>
+              Customer
+            </label>
+            <div style={{ position: "relative" }}>
+              <Search size={12} color="#94a3b8" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+              <input value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder="Search customer…" style={{ ...SEL_STYLE, paddingLeft: 30, width: 200 }} />
+            </div>
+          </div>
 
-        <DateRangePicker startDate={startDate} endDate={endDate} setStartDate={setStartDate} setEndDate={setEndDate} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", marginLeft: 4 }}>
+              Payment Status
+            </label>
+            <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} style={{ ...SEL_STYLE, width: 140 }}>
+              <option value="All Payments">All Payments</option>
+              <option value="Paid">Paid Only</option>
+              <option value="Pending">Pending / Deposit</option>
+            </select>
+          </div>
 
-        {hasFilters && (
-          <button
-            onClick={() => { setAgentFilter("All Agents"); setCustomerSearch(""); setPaymentStatus("All Payments"); setStartDate(""); setEndDate(""); }}
-            style={{ marginTop: 18, background: "none", border: "none", color: "#f05323", fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
+          <DateRangePicker startDate={startDate} endDate={endDate} setStartDate={setStartDate} setEndDate={setEndDate} />
+
+          {hasFilters && (
+            <button
+              onClick={() => { setAgentFilter("All Agents"); setCustomerSearch(""); setPaymentStatus("All Payments"); setStartDate(""); setEndDate(""); }}
+              style={{ background: "none", border: "none", color: "#f05323", fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: "0 10px" }}
+            >
+              Reset Filters
+            </button>
+          )}
+
+          <div style={{ width: 1, height: 24, background: "#e2e8f0", margin: "0 8px" }} />
+
+          <a 
+            href="https://dashboard.nextdaynutra.com/agent-create-form"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              color: "#123e67",
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: "none",
+              padding: "6px 12px",
+              borderRadius: 8,
+              transition: "background 0.2s"
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            Reset Filters
-          </button>
-        )}
+            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Create Agent
+          </a>
+        </div>
+
+        {/* Aggregate Totals Widget */}
+        <div
+          style={{
+            background: "#123e67",
+            borderRadius: 12,
+            padding: "0",
+            display: "flex",
+            color: "#fff",
+            margin: "2px 0px",
+
+            overflow: "hidden",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+            minWidth: 500,
+          }}
+        >
+          {[
+            { label: "Total Paid to Date", value: totals.paid, color: "#fff" },
+            { label: "Next Payment Pending", value: totals.pending, color: "#fff" },
+            { label: "Total Commission Balance", value: totals.balance, color: "#fff" },
+          ].map((item, i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                padding: "4px 20px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                borderRight: i < 2 ? "1px solid rgba(255,255,255,1)" : "none",
+              }}
+            >
+              <div style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
+                {item.label}
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: item.color }}>
+                ${item.value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Hierarchy Table */}
@@ -220,8 +304,8 @@ export function AgentHierarchyView({
                           <span style={{ fontSize: 11, color: "#64748b", background: "#e8eff6", padding: "2px 10px", borderRadius: 12, fontWeight: 700 }}>{customerList.length} Customers</span>
                         </div>
                       </td>
-                      <td style={{ padding: "14px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "#16a34a" }}>${totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td style={{ padding: "14px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "#f97316" }}>${totalDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td style={{ padding: "14px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "#16a34a" }}>${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td style={{ padding: "14px 24px", textAlign: "right", fontSize: 14, fontWeight: 800, color: "#f97316" }}>${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
 
                     {customerList.map(([custName, orders]) => {
@@ -242,8 +326,8 @@ export function AgentHierarchyView({
                                 <span style={{ fontSize: 11, color: "#94a3b8" }}>({orders.length} Orders)</span>
                               </div>
                             </td>
-                            <td style={{ padding: "12px 24px", textAlign: "right", fontSize: 13, color: "#16a34a", fontWeight: 600 }}>${custPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td style={{ padding: "12px 24px", textAlign: "right", fontSize: 13, color: "#f97316", fontWeight: 600 }}>${custDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td style={{ padding: "12px 24px", textAlign: "right", fontSize: 13, color: "#16a34a", fontWeight: 600 }}>${custPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td style={{ padding: "12px 24px", textAlign: "right", fontSize: 13, color: "#f97316", fontWeight: 600 }}>${custDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           </tr>
 
                           {isCustExp && (

@@ -101,15 +101,17 @@ function EmptyTableState({ tab, headers }: { tab: string; headers: typeof TABLE_
             <td
               colSpan={headers.length}
               style={{
-                padding: "60px 0",
+                padding: "80px 0",
                 textAlign: "center",
                 color: "#94a3b8",
                 background: "#fff",
                 borderRadius: 12,
               }}
             >
-              <ClipboardList size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
-              <p style={{ fontSize: 15, fontWeight: 500 }}>No {tab === "all" ? "" : tab} orders available.</p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <ClipboardList size={48} style={{ marginBottom: 16, opacity: 0.3, color: "#cbd5e1" }} />
+                <p style={{ fontSize: 16, fontWeight: 500, color: "#64748b" }}>No {tab === "all" ? "" : tab} orders available.</p>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -449,7 +451,7 @@ export function OrdersTable({
                       {/* Quoted Order Total */}
                       <td style={{ ...tdStyle(false, false), color: isFullPaid ? "#166534" : "#16a34a", fontWeight: 600, position: "relative" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                          {order.quotedOrderTotal != null ? `$${order.quotedOrderTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          {order.quotedOrderTotal != null ? `$${order.quotedOrderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                           <Tooltip content={(
                             <div style={{ textAlign: "left" }}>
                               <p style={{ fontWeight: 700, marginBottom: 6, color: "#0f172a" }}>Quoted Order Total</p>
@@ -463,7 +465,7 @@ export function OrdersTable({
                       {/* Final Order Total */}
                       <td style={{ ...tdStyle(false, false), color: isFullPaid ? "#166534" : "#16a34a", fontWeight: 600, position: "relative" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                          {order.finalOrderTotal != null ? `$${order.finalOrderTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          {order.finalOrderTotal != null ? `$${order.finalOrderTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                           <Tooltip content={(
                             <div style={{ textAlign: "left" }}>
                               <p style={{ fontWeight: 700, marginBottom: 6, color: "#0f172a" }}>Final Order Total</p>
@@ -494,12 +496,12 @@ export function OrdersTable({
                       </td>
                       {/* Commission % */}
                       <td style={{ ...tdStyle(false, false), fontWeight: 600 }}>
-                        {order.commissionPercent != null ? `${order.commissionPercent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : "—"}
+                        {order.commissionPercent != null ? `${order.commissionPercent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%` : "—"}
                       </td>
                       {/* Commission Total */}
                       <td style={{ ...tdStyle(false, false), color: isFullPaid ? "#166534" : "#0f172a", fontWeight: 600, position: "relative" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                          {order.commissionTotal != null ? `$${order.commissionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          {order.commissionTotal != null ? `$${order.commissionTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                           <Tooltip content={(
                             <div style={{ textAlign: "left" }}>
                               <p style={{ fontWeight: 700, marginBottom: 6, color: "#0f172a" }}>Total Commission</p>
@@ -513,7 +515,7 @@ export function OrdersTable({
                       {/* Commission Balance Owed */}
                       <td style={{ ...tdStyle(false, false), color: isFullPaid ? "#166534" : "#dc2626", fontWeight: 600, position: "relative" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                          {order.commissionBalanceOwed != null ? `$${order.commissionBalanceOwed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          {order.commissionBalanceOwed != null ? `$${order.commissionBalanceOwed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                           <Tooltip content={(
                             <div style={{ textAlign: "left" }}>
                               <p style={{ fontWeight: 700, marginBottom: 6, color: "#0f172a" }}>Commission Balance Owed</p>
@@ -528,7 +530,7 @@ export function OrdersTable({
                       {/* Commission Paid */}
                       <td style={{ ...tdStyle(false, false), color: isFullPaid ? "#166534" : "#16a34a", fontWeight: 600, position: "relative" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                          {order.commissionPaid != null ? `$${order.commissionPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          {order.commissionPaid != null ? `$${order.commissionPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                           {order.commissionPaymentHistory && order.commissionPaymentHistory.length > 0 && (
                             <Tooltip content={(
                               <div style={{ textAlign: "left" }}>
@@ -544,13 +546,13 @@ export function OrdersTable({
                                     <tr>
                                       <td style={{ padding: "4px 0", fontSize: 12, color: "#94a3b8" }}>Commission Total:</td>
                                       <td style={{ padding: "4px 0", fontSize: 12, fontWeight: 700, color: "#f97316", textAlign: "right" }}>
-                                        ${(order.commissionTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        ${(order.commissionTotal || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </td>
                                     </tr>
                                     <tr>
                                       <td style={{ padding: "4px 0", fontSize: 12, color: "#94a3b8" }}>Commission Paid:</td>
                                       <td style={{ padding: "4px 0", fontSize: 12, fontWeight: 700, color: "#16a34a", textAlign: "right" }}>
-                                        ${(order.commissionPaid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        ${(order.commissionPaid || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </td>
                                     </tr>
                                   </tbody>
@@ -562,7 +564,7 @@ export function OrdersTable({
                                     {order.commissionPaymentHistory.map((p, i) => (
                                       <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 20, fontSize: 12 }}>
                                         <span style={{ color: "#64748b" }}>{p.date}</span>
-                                        <span style={{ fontWeight: 600, color: "#1e293b" }}>${p.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        <span style={{ fontWeight: 600, color: "#1e293b" }}>${p.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -577,7 +579,7 @@ export function OrdersTable({
                       {/* Commission Due */}
                       <td style={{ ...tdStyle(false, false), color: isFullPaid ? "#166534" : "#f97316", fontWeight: 600, position: "relative" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                          {order.commissionDue != null ? `$${order.commissionDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                          {order.commissionDue != null ? `$${order.commissionDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                           <Tooltip content={(
                             <div style={{ textAlign: "left" }}>
                               <p style={{ fontWeight: 700, marginBottom: 6, color: "#0f172a" }}>Commission Due</p>

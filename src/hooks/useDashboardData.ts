@@ -27,27 +27,86 @@ export function useDashboardData(viewMode: ViewMode) {
 
   // Fetch Jira Active Data
   useEffect(() => {
-    const cacheKey = 'jira_customers_agents';
-    if (globalCache[cacheKey]) {
-      setActiveJiraCustomers(globalCache[cacheKey].customers);
-      setActiveJiraAgents(globalCache[cacheKey].agents);
-      setIsLoadingJiraData(false);
-    } else {
-      setIsLoadingJiraData(true);
-    }
+    const fetchData = async () => {
+      const cacheKey = 'jira_customers_agents';
+      let cachedETags: { customer: string | null; agent: string | null } = { customer: null, agent: null };
+      
+      const setJiraData = (data: any) => {
+        const custs = Array.isArray(data.customers) ? data.customers : [];
+        const agts = Array.isArray(data.agents) ? data.agents : [];
+        
+        if (JSON.stringify(activeJiraCustomers) !== JSON.stringify(custs)) {
+          setActiveJiraCustomers(custs);
+        }
+        if (JSON.stringify(activeJiraAgents) !== JSON.stringify(agts)) {
+          setActiveJiraAgents(agts);
+        }
+      };
 
-    Promise.all([
-      fetch('/api/jira/customers?type=customer').then(res => res.json()),
-      fetch('/api/jira/customers?type=agent').then(res => res.json())
-    ])
-    .then(([customers, agents]) => {
-      const custs = Array.isArray(customers) ? customers : [];
-      const agts = Array.isArray(agents) ? agents : [];
-      setActiveJiraCustomers(custs);
-      setActiveJiraAgents(agts);
-      globalCache[cacheKey] = { customers: custs, agents: agts }; // Update cache
-    })
-    .finally(() => setIsLoadingJiraData(false));
+      if (globalCache[cacheKey]) {
+        setJiraData(globalCache[cacheKey].data);
+        cachedETags = globalCache[cacheKey].etags;
+        setIsLoadingJiraData(false);
+      } else {
+        try {
+          const localStr = localStorage.getItem(cacheKey);
+          if (localStr) {
+            const localCache = JSON.parse(localStr);
+            setJiraData(localCache.data);
+            cachedETags = localCache.etags || { customer: null, agent: null };
+            globalCache[cacheKey] = localCache;
+            setIsLoadingJiraData(false);
+          } else {
+            setIsLoadingJiraData(true);
+          }
+        } catch (e) {
+          setIsLoadingJiraData(true);
+        }
+      }
+
+      try {
+        const custHeaders: HeadersInit = {};
+        const agentHeaders: HeadersInit = {};
+        if (cachedETags.customer) custHeaders['If-None-Match'] = cachedETags.customer;
+        if (cachedETags.agent) agentHeaders['If-None-Match'] = cachedETags.agent;
+
+        const [custRes, agentRes] = await Promise.all([
+          fetch('/api/jira/customers?type=customer', { headers: custHeaders }),
+          fetch('/api/jira/customers?type=agent', { headers: agentHeaders })
+        ]);
+
+        let newCusts = activeJiraCustomers;
+        let newAgents = activeJiraAgents;
+        let custEtag = cachedETags.customer;
+        let agentEtag = cachedETags.agent;
+
+        if (custRes.status !== 304 && custRes.ok) {
+          newCusts = await custRes.json();
+          custEtag = custRes.headers.get('ETag');
+        }
+        if (agentRes.status !== 304 && agentRes.ok) {
+          newAgents = await agentRes.json();
+          agentEtag = agentRes.headers.get('ETag');
+        }
+
+        const freshData = { customers: newCusts, agents: newAgents };
+        const freshEtags = { customer: custEtag, agent: agentEtag };
+        
+        const cacheEntry = { data: freshData, etags: freshEtags };
+        globalCache[cacheKey] = cacheEntry;
+        
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
+        } catch (e) {}
+
+        setJiraData(freshData);
+      } catch (err) {
+        console.error("Failed to fetch Jira active data:", err);
+      } finally {
+        setIsLoadingJiraData(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const filteredUsersList = useMemo((): Customer[] => {
@@ -75,15 +134,22 @@ export function useDashboardData(viewMode: ViewMode) {
         url = `/api/jira/orders?view=internal`;
       }
 
-      // Check cache first for rapid UI updates
-      if (globalCache[url]) {
-        const data = globalCache[url];
+      const cacheKey = `jira_orders_${url}`;
+      
+      const setOrdersData = (data: any) => {
         const active = data.activeOrders || [];
         const completed = data.completedOrders || [];
-        setActiveOrders(active);
-        setCompletedOrders(completed);
         
-        if (viewMode === 'agent') {
+        // Smart diffing to avoid unnecessary re-renders
+        const currentActiveStr = JSON.stringify(activeOrders);
+        const newActiveStr = JSON.stringify(active);
+        
+        if (currentActiveStr !== newActiveStr) {
+          setActiveOrders(active);
+          setCompletedOrders(completed);
+        }
+
+        if (viewMode === 'agent' && currentActiveStr !== newActiveStr) {
           const all = [...active, ...completed];
           const summary = all.reduce((acc: any, order: Order) => {
             acc.paid += (order.commissionPaid || 0);
@@ -93,36 +159,63 @@ export function useDashboardData(viewMode: ViewMode) {
           }, { paid: 0, pending: 0, total_owed: 0 });
           setAgentSummary(summary);
         }
-        setIsLoadingOrders(false); // Do not show loader if cached
+      };
+
+      let cachedETag: string | null = null;
+
+      // 1. Try Memory Cache
+      if (globalCache[url]) {
+        setOrdersData(globalCache[url].data);
+        cachedETag = globalCache[url].etag;
+        setIsLoadingOrders(false);
       } else {
-        setIsLoadingOrders(true); // Show loader only on first mount
+        // 2. Try LocalStorage Cache
+        try {
+          const localStr = localStorage.getItem(cacheKey);
+          if (localStr) {
+            const localCache = JSON.parse(localStr);
+            setOrdersData(localCache.data);
+            cachedETag = localCache.etag;
+            globalCache[url] = localCache;
+            setIsLoadingOrders(false);
+          } else {
+            setIsLoadingOrders(true);
+          }
+        } catch (e) {
+          setIsLoadingOrders(true);
+        }
       }
 
+      // 3. Stale-While-Revalidate with Server
       try {
-        const res = await fetch(url);
+        const headers: HeadersInit = {};
+        if (cachedETag) {
+          headers['If-None-Match'] = cachedETag;
+        }
+
+        const res = await fetch(url, { headers });
+        
+        if (res.status === 304) {
+          // Data hasn't changed, no need to update UI
+          setIsLoadingOrders(false);
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error('Jira API returned error');
+        }
+
+        const newETag = res.headers.get('ETag');
         const data = await res.json();
         
-        // Update cache silently
-        globalCache[url] = data;
+        const cacheEntry = { data, etag: newETag };
+        globalCache[url] = cacheEntry;
+        
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
+        } catch (e) { /* ignore localStorage errors */ }
 
-        const active = data.activeOrders || [];
-        const completed = data.completedOrders || [];
-        
-        // Compare new data with existing to avoid redundant renders if data hasn't changed
-        // Real-world diffing is complex, but simply setting states updates it reactively
-        setActiveOrders(active);
-        setCompletedOrders(completed);
-        
-        if (viewMode === 'agent') {
-          const all = [...active, ...completed];
-          const summary = all.reduce((acc: any, order: Order) => {
-            acc.paid += (order.commissionPaid || 0);
-            acc.pending += (order.commissionDue || 0);
-            acc.total_owed += (order.commissionBalanceOwed || 0);
-            return acc;
-          }, { paid: 0, pending: 0, total_owed: 0 });
-          setAgentSummary(summary);
-        }
+        setOrdersData(data);
       } catch (err) {
         console.error("Failed to fetch Jira orders:", err);
       } finally {
