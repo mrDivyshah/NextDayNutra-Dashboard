@@ -66,7 +66,7 @@ export type Customer = {
 export type JiraCustomer = { name: string; agent: string; jiraId?: string };
 export type JiraAgent = { name: string; jiraId: string };
 
-export type NavSection = "customers" | "agents" | "settings" | "internal" | "multi-location" | "executive";
+export type NavSection = "customers" | "create-customer" | "agents" | "settings" | "internal" | "multi-location" | "executive";
 
 export type ViewMode = 'internal' | 'agent' | 'client';
 

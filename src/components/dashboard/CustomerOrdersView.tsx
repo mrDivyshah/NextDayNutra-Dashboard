@@ -44,7 +44,7 @@ const ORDER_HEALTHS = [
 ];
 
 const QUICK_LINKS = [
-  { label: "+ Create a New Customer", href: "https://dashboard.nextdaynutra.com/user-create-form" },
+  { label: "+ Create a New Customer", action: "create-customer" as const },
   { label: "+ Create an Order", href: "https://nextdaynutra.atlassian.net/jira/software/c/projects/CM/form/4" },
   { label: "+ Create a Lead in Brevo", href: "https://dashboard.nextdaynutra.com/manual-user-create-form" },
 ];
@@ -64,6 +64,8 @@ interface CustomerOrdersViewProps {
   onToggleRow: (id: number, orderKey: string) => void;
   isHighlighted: (key: string) => boolean;
   resolveCustomerId: (name: string) => number;
+  onCreateCustomer: () => void;
+  canCreateCustomer: boolean;
 }
 
 export function CustomerOrdersView({
@@ -81,6 +83,8 @@ export function CustomerOrdersView({
   onToggleRow,
   isHighlighted,
   resolveCustomerId,
+  onCreateCustomer,
+  canCreateCustomer,
 }: CustomerOrdersViewProps) {
   const [search, setSearch] = useState("");
   const [soSearch, setSoSearch] = useState("");
@@ -164,28 +168,54 @@ export function CustomerOrdersView({
               {selectedCustomer ? selectedCustomer.name : `All ${label}s`}
             </div>
             <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-              {QUICK_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#123e67",
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#f05323")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#123e67")}
-                >
-                  {link.label}
-                </a>
-              ))}
+              {QUICK_LINKS.filter((link) => canCreateCustomer || !("action" in link)).map((link) =>
+                "action" in link ? (
+                  <button
+                    key={link.label}
+                    type="button"
+                    onClick={onCreateCustomer}
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#123e67",
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      whiteSpace: "nowrap",
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#f05323")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#123e67")}
+                  >
+                    {link.label}
+                  </button>
+                ) : (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#123e67",
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#f05323")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#123e67")}
+                  >
+                    {link.label}
+                  </a>
+                )
+              )}
             </div>
           </div>
 

@@ -12,6 +12,7 @@ import { TopBar } from "@/components/dashboard/TopBar";
 import { CustomerOrdersView } from "@/components/dashboard/CustomerOrdersView";
 import { AgentHierarchyView } from "@/components/dashboard/AgentHierarchyView";
 import { SettingsSection } from "@/components/dashboard/SettingsSection";
+import { CreateCustomerView } from "@/components/dashboard/CreateCustomerView";
 
 // Suppress unused import warning
 void signOut;
@@ -222,6 +223,9 @@ function V2Dashboard() {
   const activeLabel = navGroups.flatMap((g) => g.items).find((i) => i.key === section)?.label ?? "";
   const sectionGroupLabel =
     navGroups.find((g) => g.items.some((i) => i.key === section))?.label ?? "";
+  const resolvedActiveLabel = section === "create-customer" ? "Create Customer" : activeLabel;
+  const resolvedSectionGroupLabel = section === "create-customer" ? "Customer Dashboard" : sectionGroupLabel;
+  const canCreateCustomer = ["super_admin", "admin", "manager"].includes(currentUser?.role || "");
 
   // ── Section content ───────────────────────────────────────────────────────
   const renderContent = () => {
@@ -243,6 +247,31 @@ function V2Dashboard() {
             onToggleRow={toggleRow}
             isHighlighted={isHighlighted}
             resolveCustomerId={resolveCustomerId}
+            onCreateCustomer={() => setSection("create-customer")}
+            canCreateCustomer={canCreateCustomer}
+          />
+        );
+      case "create-customer":
+        return canCreateCustomer ? (
+          <CreateCustomerView currentUserRole={currentUser?.role} onBack={() => setSection("customers")} />
+        ) : (
+          <CustomerOrdersView
+            viewMode="client"
+            filteredUsersList={filteredUsersList}
+            selectedCustomerId={selectedCustomerId}
+            setSelectedCustomerId={setSelectedCustomerId}
+            selectedCustomer={selectedCustomer}
+            isLoadingJira={isLoadingJira}
+            isLoadingOrders={isLoadingOrders}
+            allOrders={allOrdersCombined}
+            expandedRows={expandedRows}
+            sortConfig={sortConfig}
+            onSort={requestSort}
+            onToggleRow={toggleRow}
+            isHighlighted={isHighlighted}
+            resolveCustomerId={resolveCustomerId}
+            onCreateCustomer={() => setSection("create-customer")}
+            canCreateCustomer={canCreateCustomer}
           />
         );
       case "agents":
@@ -363,8 +392,8 @@ function V2Dashboard() {
         }}
       >
         <TopBar
-          activeLabel={activeLabel}
-          sectionGroupLabel={sectionGroupLabel}
+          activeLabel={resolvedActiveLabel}
+          sectionGroupLabel={resolvedSectionGroupLabel}
           search={search}
           setSearch={setSearch}
           connected={connected}
