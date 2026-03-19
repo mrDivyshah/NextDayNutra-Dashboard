@@ -1,6 +1,25 @@
 import type { AppRole, RoleRecord } from "@/lib/roles";
 
-export type SuperAdminView = "dashboard" | "users" | "users-add" | "roles" | "roles-add" | "assets" | "settings";
+export type SuperAdminView = 
+  | "dashboard" 
+  | "users" 
+  | "users-add" 
+  | "roles" 
+  | "roles-add" 
+  | "assets" 
+  | "analytics"
+  | "analytics-logs"
+  | "analytics-active"
+  | "analytics-slugs"
+  | "analytics-errors"
+  | "forms"
+  | "notifications"
+  | "notifications-emails"
+  | "notifications-sms"
+  | "settings"
+  | "branding"
+  | "security"
+  | "support";
 
 export type ManagedUser = {
   id: number;
@@ -54,6 +73,7 @@ export type CreateRoleForm = {
   key: string;
   description: string;
   isSystem: boolean;
+  redirectUrl: string;
   /** Internal flag: true once the user has manually edited the key */
   _keyTouched: boolean;
 };

@@ -21,12 +21,21 @@ const initialCreateRoleForm: CreateRoleForm = {
   key: "",
   description: "",
   isSystem: false,
+  redirectUrl: "",
   _keyTouched: false,
 };
 
 export function useSuperAdminDashboard() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [roles, setRoles] = useState<RoleRecord[]>([]);
+  const [roleOptions, setRoleOptions] = useState<Partial<RoleRecord>[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalRoles, setTotalRoles] = useState(0);
+  const [userPage, setUserPage] = useState(1);
+  const [rolePage, setRolePage] = useState(1);
+  const [userLimit, setUserLimit] = useState(50);
+  const [roleLimit, setRoleLimit] = useState(50);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -42,14 +51,22 @@ export function useSuperAdminDashboard() {
   const [roleFormSuccess, setRoleFormSuccess] = useState("");
   const [isRolePending, startRoleTransition] = useTransition();
 
-  const loadUsers = async ({ setLoading = true }: { setLoading?: boolean } = {}) => {
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleRecord | null>(null);
+
+  const loadUsers = async ({ setLoading = true, upage, rpage, ulimit, rlimit }: { setLoading?: boolean; upage?: number; rpage?: number; ulimit?: number; rlimit?: number } = {}) => {
     if (setLoading) {
       setIsLoading(true);
     }
 
+    const up = upage ?? userPage;
+    const rp = rpage ?? rolePage;
+    const ul = ulimit ?? userLimit;
+    const rl = rlimit ?? roleLimit;
+
     setError("");
-    const response = await fetch("/api/admin/users", { cache: "no-store" });
-    const data = (await response.json().catch(() => ({ users: [], roles: [] }))) as AdminUsersResponse;
+    const response = await fetch(`/api/admin/users?userPage=${up}&userLimit=${ul}&rolePage=${rp}&roleLimit=${rl}`, { cache: "no-store" });
+    const data = (await response.json().catch(() => ({}))) as any;
 
     if (!response.ok) {
       setError(data.error || "Unable to load users.");
@@ -61,37 +78,18 @@ export function useSuperAdminDashboard() {
 
     setUsers(Array.isArray(data.users) ? data.users : []);
     setRoles(Array.isArray(data.roles) ? data.roles : []);
+    setRoleOptions(Array.isArray(data.roleOptions) ? data.roleOptions : []);
+    setTotalUsers(data.totalUsers || 0);
+    setTotalRoles(data.totalRoles || 0);
+
     if (setLoading) {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    let active = true;
-
-    const boot = async () => {
-      const response = await fetch("/api/admin/users", { cache: "no-store" });
-      const data = (await response.json().catch(() => ({ users: [], roles: [] }))) as AdminUsersResponse;
-
-      if (!active) return;
-
-      if (!response.ok) {
-        setError(data.error || "Unable to load users.");
-        setIsLoading(false);
-        return;
-      }
-
-      setUsers(Array.isArray(data.users) ? data.users : []);
-      setRoles(Array.isArray(data.roles) ? data.roles : []);
-      setIsLoading(false);
-    };
-
-    void boot();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+    void loadUsers();
+  }, [userPage, rolePage, userLimit, roleLimit]);
 
   const filteredUsers = useMemo(() => {
     const term = deferredSearch.trim().toLowerCase();
@@ -114,9 +112,9 @@ export function useSuperAdminDashboard() {
   }, [users]);
 
   const createRoleOptions =
-    roles.length > 0
-      ? roles
-      : [{ id: 0, key: "customer", name: "Customer", description: null, isSystem: true } as RoleRecord];
+    roleOptions.length > 0
+      ? roleOptions
+      : [{ id: 0, key: "customer", name: "Customer", description: null, isSystem: true } as any];
 
   const roleMix = useMemo(() => {
     return roles
@@ -211,28 +209,70 @@ export function useSuperAdminDashboard() {
     setRoleFormError("");
     setRoleFormSuccess("");
 
-    const response = await fetch("/api/admin/roles", {
-      method: "POST",
+    const isEditing = !!editingRole;
+    const url = isEditing ? `/api/admin/roles/${editingRole.id}` : "/api/admin/roles";
+    const method = isEditing ? "PATCH" : "POST";
+
+    const response = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        key: createRoleForm.key,
+        key: isEditing ? undefined : createRoleForm.key,
         name: createRoleForm.name,
-        description: createRoleForm.description || undefined,
+        description: createRoleForm.description || null,
         isSystem: createRoleForm.isSystem,
+        redirectUrl: createRoleForm.redirectUrl || null,
       }),
     });
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setRoleFormError(data.error || "Unable to create role.");
+      setRoleFormError(data.error || `Unable to ${isEditing ? "update" : "create"} role.`);
       return;
     }
 
     setCreateRoleForm(initialCreateRoleForm);
-    setRoleFormSuccess("Role created successfully.");
+    setEditingRole(null);
+    setIsAddingRole(false);
+    setRoleFormSuccess(`Role ${isEditing ? "updated" : "created"} successfully.`);
     startRoleTransition(() => {
       void loadUsers({ setLoading: false });
     });
+  };
+
+  const handleDeleteRole = async (roleId: number) => {
+    if (!confirm("Are you sure you want to delete this role? This action cannot be undone.")) return;
+    
+    setRoleFormError("");
+    const response = await fetch(`/api/admin/roles/${roleId}`, {
+      method: "DELETE",
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setRoleFormError(data.error || "Unable to delete role.");
+      return;
+    }
+
+    startRoleTransition(() => {
+      void loadUsers({ setLoading: false });
+    });
+  };
+
+  const startEditingRole = (role: RoleRecord) => {
+    const form: CreateRoleForm = {
+      name: role.name,
+      key: role.key,
+      description: role.description || "",
+      isSystem: role.isSystem,
+      redirectUrl: role.redirectUrl || "",
+      _keyTouched: true,
+    };
+    setCreateRoleForm(form);
+    setEditingRole(role);
+    setIsAddingRole(false);
+    setRoleFormError("");
+    setRoleFormSuccess("");
   };
 
   return {
@@ -267,5 +307,23 @@ export function useSuperAdminDashboard() {
     roleFormSuccess,
     isRolePending,
     handleCreateRole,
+    handleDeleteRole,
+    isAddingRole,
+    setIsAddingRole,
+    editingRole,
+    setEditingRole,
+    startEditingRole,
+    // Pagination
+    userPage,
+    setUserPage,
+    rolePage,
+    setRolePage,
+    totalUsers,
+    totalRoles,
+    userLimit,
+    setUserLimit,
+    roleLimit,
+    setRoleLimit,
+    roleOptions,
   };
 }

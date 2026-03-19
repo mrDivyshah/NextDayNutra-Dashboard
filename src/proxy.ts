@@ -8,9 +8,9 @@ const PUBLIC_PATHS = new Set([
   "/favicon.ico",
 ]);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  console.log(`[Middleware] Path: ${pathname}`);
+  console.log(`[Proxy] Path: ${pathname}`);
 
   if (
     PUBLIC_PATHS.has(pathname) ||
@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
-  console.log(`[Middleware] Token present: ${!!token}`);
+  console.log(`[Proxy] Token present: ${!!token}`);
 
   if (token) {
     if (pathname.startsWith("/super-admin") && token.role !== "super_admin") {

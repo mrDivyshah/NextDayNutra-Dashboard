@@ -64,14 +64,28 @@ export function OrderRowExpanded({ order, isCompleted, custId, colSpan, variant 
                   style={{
                     margin: 0,
                     paddingLeft: 18,
+                    listStyleType: "disc",
                     color: "#475569",
                     fontSize: 13,
-                    lineHeight: 1.7,
+                    lineHeight: "1.7",
                   }}
                 >
-                  {order.notes.map((n, i) => (
-                    <li key={i}>{n}</li>
-                  ))}
+                  {order.notes.map((n, i) => {
+                    // Regex for bolding dates or timestamps at start (e.g., 2026-03-03 or 10/25 -)
+                    const datePattern = /^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2})(\s*[-:]\s*)?/;
+                    const match = n.match(datePattern);
+                    
+                    return (
+                      <li key={i} style={{ marginBottom: 6 }}>
+                        {match ? (
+                          <>
+                            <strong style={{ color: "#0f172a" }}>{match[0]}</strong>
+                            {n.substring(match[0].length)}
+                          </>
+                        ) : n}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p style={{ fontSize: 13, color: "#94a3b8", fontStyle: "italic", margin: 0 }}>

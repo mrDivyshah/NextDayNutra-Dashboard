@@ -25,16 +25,25 @@ const rateLimits = new Map<string, { count: number; resetTime: number }>();
 
 function extractAdfText(node: any, output: string[] = []) {
   if (!node || typeof node !== 'object') return;
+
+  const blockTypes = ['paragraph', 'heading', 'listItem', 'blockquote'];
+  const isBlock = blockTypes.includes(node.type);
+
   if (node.type === 'text' && node.text) {
     output.push(node.text);
   }
   if (node.type === 'hardBreak') {
     output.push('\n');
   }
+
   if (Array.isArray(node.content)) {
     for (const child of node.content) {
       extractAdfText(child, output);
     }
+  }
+
+  if (isBlock) {
+    output.push('\n');
   }
 }
 

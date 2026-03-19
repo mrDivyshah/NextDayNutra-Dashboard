@@ -25,102 +25,113 @@ export function UserForm({
   success,
 }: UserFormProps) {
   return (
-    <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Provision access</div>
-          <h2 className="mt-2 text-2xl font-black text-slate-900">Create user</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-500">Add an account with a database role and activation status from the start.</p>
-        </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: brand.orangeSoft, color: brand.orange }}>
-          <UserPlus className="h-5 w-5" />
-        </div>
+    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-6">
+        <h2 className="text-sm font-bold text-slate-900">Account provisioning</h2>
+        <p className="mt-1 text-xs text-slate-500">Define identity, security policy, and initial state.</p>
       </div>
 
-      <form onSubmit={handleCreate} className="space-y-3.5">
-        <input
-          type="text"
-          placeholder="Full name"
-          value={createForm.name}
-          onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
-          required
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-white"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={createForm.email}
-          onChange={(event) => setCreateForm((prev) => ({ ...prev, email: event.target.value }))}
-          required
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-white"
-        />
-        <input
-          type="password"
-          placeholder="Temporary password"
-          value={createForm.password}
-          onChange={(event) => setCreateForm((prev) => ({ ...prev, password: event.target.value }))}
-          required
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-white"
-        />
-        <select
-          value={createForm.role}
-          onChange={(event) => setCreateForm((prev) => ({ ...prev, role: event.target.value as AppRole }))}
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-white"
-        >
-          {createRoleOptions.map((role) => (
-            <option key={role.key} value={role.key}>
-              {role.name}
-            </option>
-          ))}
-        </select>
+      <form onSubmit={handleCreate} className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-[12px] font-bold text-slate-700">Display name</label>
+          <input
+            type="text"
+            placeholder="e.g. John Doe"
+            value={createForm.name}
+            onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
+            required
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+          />
+        </div>
 
-        <div className="grid gap-3.5 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-[12px] font-bold text-slate-700">Email address</label>
+          <input
+            type="email"
+            placeholder="johndoe@example.com"
+            value={createForm.email}
+            onChange={(event) => setCreateForm((prev) => ({ ...prev, email: event.target.value }))}
+            required
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[12px] font-bold text-slate-700">Initial security key</label>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={createForm.password}
+            onChange={(event) => setCreateForm((prev) => ({ ...prev, password: event.target.value }))}
+            required
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[12px] font-bold text-slate-700">Base access role</label>
+          <select
+            value={createForm.role}
+            onChange={(event) => setCreateForm((prev) => ({ ...prev, role: event.target.value as AppRole }))}
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+          >
+            {createRoleOptions.map((role) => (
+              <option key={role.key} value={role.key}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Redirect URL</label>
+            <label className="text-[12px] font-bold text-slate-700">Success redirect</label>
             <input
               type="url"
-              placeholder="https://example.com/welcome"
+              placeholder="https://..."
               value={createForm.redirectUrl}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, redirectUrl: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-white"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 ml-1">Additional Access</label>
+            <label className="text-[12px] font-bold text-slate-700">Specific flags</label>
             <input
               type="text"
-              placeholder="e.g. legacy_vault_read"
+              placeholder="e.g. beta_user"
               value={createForm.additionalAccess}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, additionalAccess: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-white"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
             />
           </div>
         </div>
 
-        <label className="flex items-center gap-3 rounded-2xl bg-[#f7faf7] px-4 py-3 text-sm font-medium text-slate-700">
+        <div className="flex items-center gap-3 py-2">
           <input
             type="checkbox"
+            id="is_active"
             checked={createForm.isActive}
             onChange={(event) => setCreateForm((prev) => ({ ...prev, isActive: event.target.checked }))}
-            className="h-4 w-4"
-            style={{ accentColor: brand.orange }}
+            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600"
           />
-          Activate account immediately
-        </label>
+          <label htmlFor="is_active" className="text-[13px] font-medium text-slate-700 cursor-pointer">
+            Activate account and enable immediate login
+          </label>
+        </div>
 
-        {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-        {success && <div className="rounded-2xl border px-4 py-3 text-sm" style={{ borderColor: "#BFE7D7", backgroundColor: brand.tealSoft, color: brand.teal }}>{success}</div>}
+        {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs text-rose-700">{error}</div>}
+        {success && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-700">{success}</div>}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:bg-slate-400"
-          style={{ backgroundColor: brand.orange }}
-        >
-          <UserPlus className="h-4 w-4" />
-          {isPending ? "Saving..." : "Create user"}
-        </button>
+        <div className="flex justify-end pt-4">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isPending ? "Creating..." : "Save and notify"}
+          </button>
+        </div>
       </form>
-    </section>
+    </div>
   );
 }

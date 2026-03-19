@@ -15,6 +15,7 @@ const createRoleSchema = z.object({
   name: z.string().trim().min(2).max(191),
   description: z.string().trim().max(1000).optional(),
   isSystem: z.boolean().optional(),
+  redirectUrl: z.string().trim().max(500).optional().nullable(),
 });
 
 export async function GET() {
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
     name: parsed.data.name,
     description: parsed.data.description || null,
     isSystem: parsed.data.isSystem ?? false,
+    redirectUrl: parsed.data.redirectUrl || null,
   });
 
   return NextResponse.json({ success: true });

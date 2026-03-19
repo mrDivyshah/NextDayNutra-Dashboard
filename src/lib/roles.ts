@@ -6,6 +6,7 @@ export type RoleRecord = {
   name: string;
   description: string | null;
   isSystem: boolean;
+  redirectUrl?: string | null;
   createdAt?: Date | string;
 };
 

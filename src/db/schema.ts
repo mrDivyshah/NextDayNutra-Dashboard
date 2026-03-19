@@ -17,6 +17,7 @@ export const roles = mysqlTable(
     name: varchar("name", { length: 191 }).notNull(),
     description: text("description"),
     isSystem: boolean("is_system").notNull().default(true),
+    redirectUrl: varchar("redirect_url", { length: 500 }),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
