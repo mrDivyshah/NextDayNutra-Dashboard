@@ -20,6 +20,8 @@ export type AppUser = {
   email: string;
   name: string;
   role: AppRole;
+  jiraId?: string | null;
+  companyName?: string | null;
 };
 
 export const authOptions: NextAuthOptions = {
@@ -72,8 +74,9 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: roleRecord.key,
           jiraId: user.jiraId,
+          companyName: user.companyName,
           rememberMe,
-        } as NextAuthUser & { role: AppUser["role"]; jiraId?: string | null };
+        } as NextAuthUser & { role: AppUser["role"]; jiraId?: string | null; companyName?: string | null };
       },
     }),
   ],
@@ -83,6 +86,7 @@ export const authOptions: NextAuthOptions = {
         token.id = Number(user.id);
         token.role = user.role;
         token.jiraId = user.jiraId;
+        token.companyName = user.companyName;
         token.rememberMe = !!user.rememberMe;
         token.exp = Math.floor(Date.now() / 1000) + (user.rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 12);
       }
@@ -93,6 +97,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = Number(token.id);
         session.user.role = token.role as AppRole;
         session.user.jiraId = token.jiraId;
+        session.user.companyName = token.companyName as string | null | undefined;
         session.user.rememberMe = !!token.rememberMe;
       }
       return session;

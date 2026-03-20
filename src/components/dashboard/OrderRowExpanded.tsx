@@ -15,7 +15,7 @@ interface OrderRowExpandedProps {
   variant?: "default" | "agent";
 }
 
-export function OrderRowExpanded({ order, isCompleted, custId, colSpan, variant = "default" }: OrderRowExpandedProps) {
+function OrderRowExpandedInner({ order, isCompleted, custId, colSpan, variant = "default" }: OrderRowExpandedProps) {
   return (
     <tr>
       <td colSpan={colSpan} style={{ padding: "0 0 8px" }}>
@@ -175,3 +175,5 @@ export function OrderRowExpanded({ order, isCompleted, custId, colSpan, variant 
     </tr>
   );
 }
+
+export const OrderRowExpanded = React.memo(OrderRowExpandedInner);

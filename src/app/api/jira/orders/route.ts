@@ -15,7 +15,7 @@ import crypto from 'crypto';
 
 // In-memory cache representing static key datasets
 const jiraApiCache = new Map<string, { data: any; timestamp: number; etag: string }>();
-const CACHE_TTL = 1000 * 60 * 3; // 3 Minutes caching buffer limit
+const CACHE_TTL = 1000 * 60 * 60; // 1 Hour caching buffer limit
 
 // Rate limiting setup
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -67,9 +67,26 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const view = searchParams.get('view') || 'client';
-  const customerName = searchParams.get('customerName');
-  const agentName = searchParams.get('agentName');
+  const requestedView = searchParams.get('view') || 'client';
+  const requestedCustomerName = searchParams.get('customerName');
+  const requestedAgentName = searchParams.get('agentName');
+  const role = session?.user?.role || '';
+  const sessionCompanyName = session?.user?.companyName?.trim();
+  const sessionUserName = session?.user?.name?.trim();
+  const isCustomerScopedUser = role === 'customer' || role === 'customer_team';
+  const isAgentScopedUser = role === 'agent';
+
+  const view = isCustomerScopedUser ? 'client' : isAgentScopedUser ? 'agent' : requestedView;
+  const customerName = isCustomerScopedUser ? sessionCompanyName : requestedCustomerName;
+  const agentName = isAgentScopedUser ? sessionUserName : requestedAgentName;
+
+  if (isCustomerScopedUser && !customerName) {
+    return NextResponse.json({ error: "Customer account is missing company mapping." }, { status: 403 });
+  }
+
+  if (isAgentScopedUser && !agentName) {
+    return NextResponse.json({ error: "Agent account is missing agent mapping." }, { status: 403 });
+  }
 
   const cacheKey = `${view}_${customerName || 'all'}_${agentName || 'all'}`;
   const clientETag = request.headers.get('if-none-match');
@@ -220,7 +237,44 @@ export async function GET(request: NextRequest) {
       else break;
     }
 
-    const orderKeys = allIssues.filter(i => i.fields.issuetype?.name === 'Order').map(i => i.key);
+    const orderKeys = allIssues.filter(i => {
+      const type = i.fields?.issuetype?.name || '';
+      return ['Order', 'Partial Order Info'].includes(type) || type.includes('Order');
+    }).map(i => i.key);
+
+    let allSubtasks: any[] = [];
+    if (orderKeys.length > 0) {
+      for (let i = 0; i < orderKeys.length; i += 50) {
+        const chunk = orderKeys.slice(i, i + 50);
+        const subtaskJql = `parent IN (${chunk.map(k => `"${k}"`).join(',')})`;
+
+        
+        let stNextPageToken: string | undefined = undefined;
+        while (true) {
+          const subPayload: any = { jql: subtaskJql, maxResults: 100, fields };
+          if (stNextPageToken) subPayload.nextPageToken = stNextPageToken;
+          const subRes = await fetch(`${CH_JIRA_HOST}/rest/api/3/search/jql`, {
+             method: 'POST',
+             headers: { 'Authorization': authHeader, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+             body: JSON.stringify(subPayload),
+             cache: 'no-store'
+          });
+          if (subRes.ok) {
+            const subData = await subRes.json();
+            allSubtasks = allSubtasks.concat(subData.issues || []);
+            if (subData.nextPageToken) stNextPageToken = subData.nextPageToken;
+            else break;
+          } else {
+            break;
+          }
+        }
+      }
+      
+      const existingKeys = new Set(allIssues.map(i => i.key));
+      const uniqueSubtasks = allSubtasks.filter(i => !existingKeys.has(i.key));
+      allIssues = allIssues.concat(uniqueSubtasks);
+    }
+
     let linkedMap: Record<string, any[]> = {};
 
     if (orderKeys.length > 0) {
@@ -280,7 +334,8 @@ export async function GET(request: NextRequest) {
     for (const issue of allIssues) {
       const f = issue.fields || {};
       const parentKey = f.parent?.key;
-      if (parentKey && keyMap[parentKey] && f.issuetype?.name === 'Design Order') {
+
+      if (parentKey && keyMap[parentKey]) {
         const parent = keyMap[parentKey];
         const pf = parent.fields || {};
         let so = pf.customfield_10113;
@@ -383,6 +438,7 @@ export async function GET(request: NextRequest) {
         const cf = child.fields || {};
         return {
           id: child.id,
+          summary: cf.summary || '-',
           date: formatDate(cf.customfield_10768),
           brandType: cf.customfield_10545 || '-',
           status: cf.status?.name || '-',

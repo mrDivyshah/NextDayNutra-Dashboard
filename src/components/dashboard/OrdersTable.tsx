@@ -77,7 +77,7 @@ function EmptyTableState({ tab, headers }: { tab: string; headers: typeof TABLE_
               <th
                 key={h.key}
                 style={{
-                  padding: "12px 14px",
+                  padding: "8px 14px",
                   fontSize: 11,
                   fontWeight: 700,
                   color: "#94a3b8",
@@ -101,7 +101,7 @@ function EmptyTableState({ tab, headers }: { tab: string; headers: typeof TABLE_
             <td
               colSpan={headers.length}
               style={{
-                padding: "80px 0",
+                padding: "8px 0",
                 textAlign: "center",
                 color: "#94a3b8",
                 background: "#fff",
@@ -197,7 +197,7 @@ function Tooltip({ content, children }: { content: React.ReactNode; children: Re
 }
 
 /** ─── OrdersTable Component ─────────────────────────────────────────────────── */
-export function OrdersTable({
+function OrdersTableInner({
   orders,
   tab,
   expandedRows,
@@ -217,7 +217,7 @@ export function OrdersTable({
   }
 
   // Sort
-  let sortedOrders = [...orders];
+  const sortedOrders = [...orders];
   if (sortConfig !== null) {
     sortedOrders.sort((a, b) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -286,13 +286,15 @@ export function OrdersTable({
         }
       `}</style>
       <table
+        className=""
         style={{
           width: "100%",
           borderCollapse: "separate",
-          borderSpacing: "0 6px",
+          borderSpacing: "0 0px",
+          borderRadius: "12px",
         }}
       >
-        <thead style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff" }}>
+        <thead style={{ position: "sticky", top: 0, zIndex: 10, background: "#fafafa" }}>
           <tr>
             {headers.map((h) => (
               <th
@@ -301,7 +303,7 @@ export function OrdersTable({
                   h.sortable !== false ? onSort(h.key as keyof Order) : undefined
                 }
                 style={{
-                  padding: "12px 14px",
+                  padding: "4px 14px",
                   fontSize: 10,
                   fontWeight: 700,
                   color: "#94a3b8",
@@ -310,7 +312,6 @@ export function OrdersTable({
                   textAlign: "left",
                   borderBottom: "1px solid #f1f5f9",
                   whiteSpace: "normal",
-                  background: "#fff",
                   zIndex: 10,
                   cursor: h.sortable !== false ? "pointer" : "default",
                   userSelect: "none",
@@ -790,3 +791,5 @@ export function OrdersTable({
     </div>
   );
 }
+
+export const OrdersTable = React.memo(OrdersTableInner);

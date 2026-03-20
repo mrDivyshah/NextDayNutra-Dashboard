@@ -7,6 +7,7 @@ declare module "next-auth" {
       id: number;
       role: AppRole;
       jiraId?: string | null;
+      companyName?: string | null;
       rememberMe?: boolean;
     };
   }
@@ -14,6 +15,7 @@ declare module "next-auth" {
   interface User {
     role: AppRole;
     jiraId?: string | null;
+    companyName?: string | null;
     rememberMe?: boolean;
   }
 }
@@ -23,6 +25,7 @@ declare module "next-auth/jwt" {
     id?: number;
     role?: AppRole;
     jiraId?: string | null;
+    companyName?: string | null;
     rememberMe?: boolean;
   }
 }

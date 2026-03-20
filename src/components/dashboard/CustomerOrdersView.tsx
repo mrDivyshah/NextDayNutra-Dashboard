@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import {
   Search,
   ChevronDown,
@@ -14,6 +14,7 @@ import {
 import type { Order, Customer } from "@/types/dashboard";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { OrdersTable } from "./OrdersTable";
+import { LinkedUsersPanel } from "./LinkedUsersPanel";
 
 const WORKFLOW_STATUSES = [
   "1 - Ready to Start Order",
@@ -66,6 +67,7 @@ interface CustomerOrdersViewProps {
   resolveCustomerId: (name: string) => number;
   onCreateCustomer: () => void;
   canCreateCustomer: boolean;
+  allowEntitySelection?: boolean;
 }
 
 export function CustomerOrdersView({
@@ -85,6 +87,7 @@ export function CustomerOrdersView({
   resolveCustomerId,
   onCreateCustomer,
   canCreateCustomer,
+  allowEntitySelection = true,
 }: CustomerOrdersViewProps) {
   const [search, setSearch] = useState("");
   const [soSearch, setSoSearch] = useState("");
@@ -92,40 +95,58 @@ export function CustomerOrdersView({
   const [workflowFilter, setWorkflowFilter] = useState("");
   const [healthFilter, setHealthFilter] = useState("");
   const [tabFilter, setTabFilter] = useState<"all" | "active" | "completed">("all");
-  const [custOpen, setCustOpen] = useState(false);
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState<"header" | "filter" | null>(null);
+  const deferredSearch = useDeferredValue(search);
+  const deferredSoSearch = useDeferredValue(soSearch);
+  const deferredProductSearch = useDeferredValue(productSearch);
+  const deferredWorkflowFilter = useDeferredValue(workflowFilter);
+  const deferredHealthFilter = useDeferredValue(healthFilter);
 
   const label = viewMode === "agent" ? "Agent" : "Customer";
   const list = filteredUsersList.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+    c.name.toLowerCase().includes(deferredSearch.toLowerCase())
   );
 
   const displayOrders = useMemo(() => {
     let orders = selectedCustomer
       ? allOrders.filter(
-          (o) =>
-            o.customer?.trim().toLowerCase() === selectedCustomer.name.trim().toLowerCase()
+          (o) => o.customer?.trim().toLowerCase() === selectedCustomer.name.trim().toLowerCase()
         )
       : allOrders;
+
     if (tabFilter !== "all") orders = orders.filter((o) => o._tab === tabFilter);
-    if (soSearch) orders = orders.filter((o) => o.so?.toLowerCase().includes(soSearch.toLowerCase()));
-    if (productSearch) orders = orders.filter((o) => o.product?.toLowerCase().includes(productSearch.toLowerCase()));
-    if (workflowFilter) orders = orders.filter((o) => o.status?.toLowerCase().includes(workflowFilter.toLowerCase()));
-    if (healthFilter) orders = orders.filter((o) => o.health?.toLowerCase().includes(healthFilter.toLowerCase()));
+    if (deferredSoSearch) orders = orders.filter((o) => o.so?.toLowerCase().includes(deferredSoSearch.toLowerCase()));
+    if (deferredProductSearch) {
+      orders = orders.filter((o) => o.product?.toLowerCase().includes(deferredProductSearch.toLowerCase()));
+    }
+    if (deferredWorkflowFilter) {
+      orders = orders.filter((o) => o.status?.toLowerCase().includes(deferredWorkflowFilter.toLowerCase()));
+    }
+    if (deferredHealthFilter) {
+      orders = orders.filter((o) => o.health?.toLowerCase().includes(deferredHealthFilter.toLowerCase()));
+    }
+
     return orders;
-  }, [allOrders, selectedCustomer, tabFilter, soSearch, productSearch, workflowFilter, healthFilter]);
+  }, [
+    allOrders,
+    selectedCustomer,
+    tabFilter,
+    deferredSoSearch,
+    deferredProductSearch,
+    deferredWorkflowFilter,
+    deferredHealthFilter,
+  ]);
 
   const activeCount = allOrders.filter(
     (o) =>
       o._tab === "active" &&
-      (!selectedCustomer ||
-        o.customer?.trim().toLowerCase() === selectedCustomer.name.trim().toLowerCase())
+      (!selectedCustomer || o.customer?.trim().toLowerCase() === selectedCustomer.name.trim().toLowerCase())
   ).length;
 
   const completedCount = allOrders.filter(
     (o) =>
       o._tab === "completed" &&
-      (!selectedCustomer ||
-        o.customer?.trim().toLowerCase() === selectedCustomer.name.trim().toLowerCase())
+      (!selectedCustomer || o.customer?.trim().toLowerCase() === selectedCustomer.name.trim().toLowerCase())
   ).length;
 
   const selStyle: React.CSSProperties = {
@@ -139,6 +160,133 @@ export function CustomerOrdersView({
     padding: "0 10px",
     cursor: "pointer",
   };
+
+  const renderCustomerDropdown = (mode: "header" | "filter") => (
+    <>
+      <div
+        style={{ position: "fixed", inset: 0, zIndex: 40 }}
+        onClick={() => setCustomerDropdownOpen(null)}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          marginTop: 4,
+          width: mode === "header" ? 300 : 260,
+          background: "#fff",
+          borderRadius: 12,
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
+          zIndex: 50,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9" }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#94a3b8",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 8,
+            }}
+          >
+            {label}s
+          </div>
+          <div style={{ position: "relative" }}>
+            <Search
+              size={12}
+              color="#94a3b8"
+              style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }}
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              autoFocus
+              style={{
+                width: "100%",
+                paddingLeft: 28,
+                height: 32,
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: 8,
+                fontSize: 12,
+                color: "#334155",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            setSelectedCustomerId(null);
+            setCustomerDropdownOpen(null);
+          }}
+          style={dropdownItemStyle(selectedCustomerId === null)}
+        >
+          <div style={dropdownAvatarStyle(selectedCustomerId === null)}>
+            <Sparkles size={14} />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 700, flex: 1, textAlign: "left" }}>
+            All {label}s
+          </span>
+        </button>
+
+        <div style={{ maxHeight: 320, overflowY: "auto" }}>
+          {isLoadingJira ? (
+            [...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  height: 38,
+                  margin: "6px 10px",
+                  background: "#f8fafc",
+                  borderRadius: 7,
+                }}
+              />
+            ))
+          ) : list.length === 0 ? (
+            <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 12 }}>
+              No {label.toLowerCase()}s found.
+            </div>
+          ) : (
+            list.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedCustomerId(selectedCustomerId === c.id ? null : c.id);
+                  setCustomerDropdownOpen(null);
+                }}
+                style={dropdownItemStyle(selectedCustomerId === c.id)}
+              >
+                <div style={dropdownAvatarStyle(selectedCustomerId === c.id)}>
+                  {c.name[0]?.toUpperCase()}
+                </div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    flex: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    textAlign: "left",
+                  }}
+                >
+                  {c.name}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -154,7 +302,6 @@ export function CustomerOrdersView({
           minHeight: 0,
         }}
       >
-        {/* Panel header */}
         <div style={{ padding: "14px 20px 0", borderBottom: "1px solid #f1f5f9" }}>
           <div
             style={{
@@ -164,9 +311,46 @@ export function CustomerOrdersView({
               marginBottom: 12,
             }}
           >
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
-              {selectedCustomer ? selectedCustomer.name : `All ${label}s`}
+            <div style={{ position: "relative" }}>
+              {allowEntitySelection ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCustomerDropdownOpen((prev) => (prev === "header" ? null : "header"))
+                    }
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      color: "#0f172a",
+                    }}
+                  >
+                    <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+                      {selectedCustomer ? selectedCustomer.name : `All ${label}s`}
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      color="#94a3b8"
+                      style={{
+                        transform: customerDropdownOpen === "header" ? "rotate(180deg)" : "none",
+                        transition: "transform 0.2s",
+                      }}
+                    />
+                  </button>
+                  {customerDropdownOpen === "header" && renderCustomerDropdown("header")}
+                </>
+              ) : (
+                <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+                  {selectedCustomer ? selectedCustomer.name : `All ${label}s`}
+                </span>
+              )}
             </div>
+
             <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
               {QUICK_LINKS.filter((link) => canCreateCustomer || !("action" in link)).map((link) =>
                 "action" in link ? (
@@ -219,7 +403,6 @@ export function CustomerOrdersView({
             </div>
           </div>
 
-          {/* Tab bar */}
           <div style={{ display: "flex", gap: 0, marginBottom: -1 }}>
             {(
               [
@@ -235,8 +418,7 @@ export function CustomerOrdersView({
                   padding: "8px 18px",
                   border: "none",
                   background: "none",
-                  borderBottom:
-                    tabFilter === key ? "2px solid #123e67" : "2px solid transparent",
+                  borderBottom: tabFilter === key ? "2px solid #123e67" : "2px solid transparent",
                   color: tabFilter === key ? "#123e67" : "#64748b",
                   fontWeight: tabFilter === key ? 700 : 500,
                   fontSize: 13,
@@ -265,7 +447,6 @@ export function CustomerOrdersView({
           </div>
         </div>
 
-        {/* Filter bar */}
         <div
           style={{
             padding: "12px 20px",
@@ -277,220 +458,6 @@ export function CustomerOrdersView({
             background: "#fafafa",
           }}
         >
-          {/* Customer Dropdown */}
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setCustOpen(!custOpen)}
-              style={{
-                ...selStyle,
-                width: 170,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                background: "#fff",
-              }}
-            >
-              <span
-                style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  fontWeight: 600,
-                }}
-              >
-                {selectedCustomer ? selectedCustomer.name : `All ${label}s`}
-              </span>
-              <ChevronDown
-                size={14}
-                color="#94a3b8"
-                style={{
-                  transform: custOpen ? "rotate(180deg)" : "none",
-                  transition: "transform 0.2s",
-                }}
-              />
-            </button>
-            {custOpen && (
-              <>
-                <div
-                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
-                  onClick={() => setCustOpen(false)}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    marginTop: 4,
-                    width: 260,
-                    background: "#fff",
-                    borderRadius: 12,
-                    border: "1px solid #e2e8f0",
-                    boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
-                    zIndex: 50,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9" }}>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "#94a3b8",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                        marginBottom: 8,
-                      }}
-                    >
-                      {label}s
-                    </div>
-                    <div style={{ position: "relative" }}>
-                      <Search
-                        size={12}
-                        color="#94a3b8"
-                        style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }}
-                      />
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search…"
-                        autoFocus
-                        style={{
-                          width: "100%",
-                          paddingLeft: 28,
-                          height: 32,
-                          background: "#f8fafc",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: 8,
-                          fontSize: 12,
-                          color: "#334155",
-                          outline: "none",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => { setSelectedCustomerId(null); setCustOpen(false); }}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 9,
-                      padding: "9px 14px",
-                      background: selectedCustomerId === null ? "#f0f4f8" : "transparent",
-                      border: "none",
-                      borderBottom: "1px solid #f8fafc",
-                      cursor: "pointer",
-                      color: selectedCustomerId === null ? "#123e67" : "#334155",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: "50%",
-                        background: selectedCustomerId === null ? "#e8eff6" : "#f1f5f9",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 11,
-                        fontWeight: 800,
-                        color: selectedCustomerId === null ? "#123e67" : "#64748b",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Sparkles size={14} />
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, flex: 1, textAlign: "left" }}>
-                      All {label}s
-                    </span>
-                  </button>
-
-                  <div style={{ maxHeight: 320, overflowY: "auto" }}>
-                    {isLoadingJira ? (
-                      [...Array(3)].map((_, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            height: 38,
-                            margin: "6px 10px",
-                            background: "#f8fafc",
-                            borderRadius: 7,
-                          }}
-                        />
-                      ))
-                    ) : list.length === 0 ? (
-                      <div
-                        style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 12 }}
-                      >
-                        No {label.toLowerCase()}s found.
-                      </div>
-                    ) : (
-                      list.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setSelectedCustomerId(
-                              selectedCustomerId === c.id ? null : c.id
-                            );
-                            setCustOpen(false);
-                          }}
-                          style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 9,
-                            padding: "9px 14px",
-                            background:
-                              selectedCustomerId === c.id ? "#f0f4f8" : "transparent",
-                            border: "none",
-                            borderBottom: "1px solid #f8fafc",
-                            cursor: "pointer",
-                            color: selectedCustomerId === c.id ? "#123e67" : "#334155",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 26,
-                              height: 26,
-                              borderRadius: "50%",
-                              background:
-                                selectedCustomerId === c.id ? "#e8eff6" : "#f1f5f9",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 11,
-                              fontWeight: 800,
-                              color: selectedCustomerId === c.id ? "#123e67" : "#64748b",
-                              flexShrink: 0,
-                            }}
-                          >
-                            {c.name[0]?.toUpperCase()}
-                          </div>
-                          <span
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 600,
-                              flex: 1,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              textAlign: "left",
-                            }}
-                          >
-                            {c.name}
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* SO Search */}
           <div style={{ position: "relative" }}>
             <Search
               size={12}
@@ -515,7 +482,6 @@ export function CustomerOrdersView({
             />
           </div>
 
-          {/* Product Search */}
           <div style={{ position: "relative" }}>
             <Search
               size={12}
@@ -525,7 +491,7 @@ export function CustomerOrdersView({
             <input
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
-              placeholder="Product name…"
+              placeholder="Product name..."
               style={{
                 paddingLeft: 28,
                 height: 34,
@@ -540,7 +506,6 @@ export function CustomerOrdersView({
             />
           </div>
 
-          {/* Workflow Status */}
           <select
             value={workflowFilter}
             onChange={(e) => setWorkflowFilter(e.target.value)}
@@ -552,7 +517,6 @@ export function CustomerOrdersView({
             ))}
           </select>
 
-          {/* Order Health */}
           <select
             value={healthFilter}
             onChange={(e) => setHealthFilter(e.target.value)}
@@ -564,7 +528,6 @@ export function CustomerOrdersView({
             ))}
           </select>
 
-          {/* Health stat strip */}
           {!isLoadingOrders && (
             <div style={{ display: "flex", gap: 8, marginLeft: "auto", padding: "0 8px" }}>
               {[
@@ -624,13 +587,18 @@ export function CustomerOrdersView({
           </div>
         </div>
 
-        {/* Table */}
+        {selectedCustomer && canCreateCustomer && (
+          <div >
+            <LinkedUsersPanel selectedCustomer={selectedCustomer} />
+          </div>
+        )}
+
         <div
           style={{
             flex: 1,
             overflowY: "auto",
             overflowX: "auto",
-            padding: "0 20px 20px",
+            padding: "0 0px 0px",
             minHeight: 0,
           }}
         >
@@ -656,4 +624,35 @@ export function CustomerOrdersView({
       </div>
     </div>
   );
+}
+
+function dropdownItemStyle(isActive: boolean): React.CSSProperties {
+  return {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    gap: 9,
+    padding: "9px 14px",
+    background: isActive ? "#f0f4f8" : "transparent",
+    border: "none",
+    borderBottom: "1px solid #f8fafc",
+    cursor: "pointer",
+    color: isActive ? "#123e67" : "#334155",
+  };
+}
+
+function dropdownAvatarStyle(isActive: boolean): React.CSSProperties {
+  return {
+    width: 26,
+    height: 26,
+    borderRadius: "50%",
+    background: isActive ? "#e8eff6" : "#f1f5f9",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 11,
+    fontWeight: 800,
+    color: isActive ? "#123e67" : "#64748b",
+    flexShrink: 0,
+  };
 }

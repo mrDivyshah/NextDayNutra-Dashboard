@@ -13,6 +13,7 @@ import type { Order, LORRequest } from "@/types/dashboard";
 import AssetVault from "@/components/AssetVault";
 import { OrderFilesPreview } from "@/components/dashboard/OrderFiles";
 import { useOrderHighlights } from "@/hooks/useNDNWebSocket";
+import { DashboardPageFrame } from "@/components/dashboard/DashboardPageFrame";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const WORKFLOW_STATUSES = [
@@ -27,10 +28,10 @@ const ORDER_HEALTHS = ["On Track", "Off Track", "At Risk", "White Label Order", 
 
 function tdStyle(first: boolean, last: boolean): React.CSSProperties {
   return {
-    padding: "13px 14px", fontSize: 13, color: "#334155", background: "inherit",
+    padding: "4px 14px", fontSize: 13, color: "#334155", background: "inherit",
     borderTop: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9",
-    ...(first ? { borderLeft: "1px solid #f1f5f9", borderTopLeftRadius: 10, borderBottomLeftRadius: 10 } : {}),
-    ...(last ? { borderRight: "1px solid #f1f5f9", borderTopRightRadius: 10, borderBottomRightRadius: 10 } : {}),
+    ...(first ? { borderLeft: "1px solid #f1f5f9" } : {}),
+    ...(last ? { borderRight: "1px solid #f1f5f9" } : {}),
   };
 }
 
@@ -298,8 +299,10 @@ function AgentDetailContent() {
 
 export default function AgentDetailPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>Loading agent profile…</div>}>
-      <AgentDetailContent />
-    </Suspense>
+    <DashboardPageFrame section="agents" activeLabel="Agent Profile" sectionGroupLabel="Dashboards">
+      <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>Loading agent profile…</div>}>
+        <AgentDetailContent />
+      </Suspense>
+    </DashboardPageFrame>
   );
 }

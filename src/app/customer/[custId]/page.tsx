@@ -11,7 +11,9 @@ import { signOut } from "next-auth/react";
 import type { Order } from "@/types/dashboard";
 import AssetVault from "@/components/AssetVault";
 import { OrderFilesPreview } from "@/components/dashboard/OrderFiles";
+import { LORRequestsTable } from "@/components/dashboard/LORRequestsTable";
 import { useOrderHighlights } from "@/hooks/useNDNWebSocket";
+import { DashboardPageFrame } from "@/components/dashboard/DashboardPageFrame";
 
 const WORKFLOW_STATUSES = [
   "1 - Ready to Start Order", "2 - In Sourcing", "3 - Ordering Raw Materials",
@@ -299,30 +301,7 @@ function CustomerDetailContent() {
                                 </div>
                                 {/* LOR Requests */}
                                 {order.lorRequests?.length > 0 && (
-                                  <div style={{ background: "#fff", borderRadius: 12, padding: 16, border: "1px solid #e2e8f0" }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><ClipboardList size={14} color="#123e67" /> LOR Requests</div>
-                                    <div style={{ overflowX: "auto" }}>
-                                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                                        <thead><tr style={{ borderBottom: "2px solid #f1f5f9" }}>
-                                          {["Summary","Date","Brand Type","Status","Qty Ordered","Qty Delivered","Delivery Date","Label Size"].map(h => <th key={h} style={{ padding: "6px 10px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>)}
-                                        </tr></thead>
-                                        <tbody>
-                                          {order.lorRequests.map((lor, li) => (
-                                            <tr key={li} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                                              <td style={{ padding: "8px 10px", color: "#334155" }}>{lor.summary || lor.brandType || "—"}</td>
-                                              <td style={{ padding: "8px 10px", color: "#64748b", whiteSpace: "nowrap" }}>{lor.date || "—"}</td>
-                                              <td style={{ padding: "8px 10px", color: "#64748b" }}>{lor.brandType || "—"}</td>
-                                              <td style={{ padding: "8px 10px" }}><span style={{ color: "#123e67", fontWeight: 600 }}>{lor.status}</span></td>
-                                              <td style={{ padding: "8px 10px", textAlign: "center", fontWeight: 600 }}>{lor.qtyOrdered}</td>
-                                              <td style={{ padding: "8px 10px", textAlign: "center", fontWeight: 600, color: "#16a34a" }}>{lor.qtyDelivered}</td>
-                                              <td style={{ padding: "8px 10px", color: "#64748b", whiteSpace: "nowrap" }}>{lor.deliveryDate || "—"}</td>
-                                              <td style={{ padding: "8px 10px", color: "#64748b" }}>{lor.labelSize || "—"}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
+                                  <LORRequestsTable lorRequests={order.lorRequests} />
                                 )}
                               </div>
                             </td>
@@ -343,8 +322,10 @@ function CustomerDetailContent() {
 
 export default function CustomerDetailPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>Loading customer profile…</div>}>
-      <CustomerDetailContent />
-    </Suspense>
+    <DashboardPageFrame section="customers" activeLabel="Customer Profile" sectionGroupLabel="Dashboards">
+      <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>Loading customer profile…</div>}>
+        <CustomerDetailContent />
+      </Suspense>
+    </DashboardPageFrame>
   );
 }
