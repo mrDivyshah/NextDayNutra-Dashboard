@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useDeferredValue, useMemo, useRef, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { Search, ChevronRight } from "lucide-react";
 import type { Order, JiraAgent, JiraCustomer } from "@/types/dashboard";
 import { LoadingSpinner } from "./LoadingSpinner";
@@ -59,10 +59,10 @@ export function AgentHierarchyView({
   const [paymentStatus, setPaymentStatus] = useState("All Payments");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [hasUserToggledCustomer, setHasUserToggledCustomer] = useState(false);
   const deferredCustomerSearch = useDeferredValue(customerSearch);
   const effectiveAgentFilter = lockedAgentName || agentFilter;
   const isLockedAgentView = !!lockedAgentName;
-  const hasUserToggledCustomerRef = useRef(false);
 
   const grouped = useMemo(() => {
     const map: Record<string, Record<string, (Order & { _tab: string })[]>> = {};
@@ -127,7 +127,7 @@ export function AgentHierarchyView({
 
   const toggleCustomer = (name: string) =>
     setExpandedCustomers((prev) => {
-      hasUserToggledCustomerRef.current = true;
+      setHasUserToggledCustomer(true);
       return prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name];
     });
 
@@ -358,7 +358,7 @@ export function AgentHierarchyView({
                         expandedCustomers.includes(custKey) ||
                         (
                           isLockedAgentView &&
-                          !hasUserToggledCustomerRef.current &&
+                          !hasUserToggledCustomer &&
                           expandedCustomers.length === 0 &&
                           custKey === firstExpandedCustomerKey
                         );
